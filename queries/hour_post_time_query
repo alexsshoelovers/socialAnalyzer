@@ -1,0 +1,70 @@
+SELECT dayname(t1.date) AS name ,
+       t1.hour AS hour ,
+       sum(ifnull(COUNT,0))/COUNT(*) AS COUNT ,
+                                 avg(ifnull(likes,0))AS likes,
+                                 avg(ifnull(post_impressions,0)) AS post_impressions,
+                                 avg(ifnull(shares,0)) AS shares,
+                                 avg(ifnull(link_clicks,0)) AS link_clicks,
+                                 avg(ifnull(comments,0))AS comments,
+                                 avg(ifnull(post_video_views,0)) AS post_video_views
+FROM
+  (SELECT a.Date AS date,
+          b.hour AS hour
+   FROM
+     (SELECT curdate() - INTERVAL (a.a + (10 * b.a) + (100 * c.a)) DAY AS Date
+      FROM
+        (SELECT 0 AS a
+         UNION ALL SELECT 1
+         UNION ALL SELECT 2
+         UNION ALL SELECT 3
+         UNION ALL SELECT 4
+         UNION ALL SELECT 5
+         UNION ALL SELECT 6
+         UNION ALL SELECT 7
+         UNION ALL SELECT 8
+         UNION ALL SELECT 9) AS a CROSS
+      JOIN
+        (SELECT 0 AS a
+         UNION ALL SELECT 1
+         UNION ALL SELECT 2
+         UNION ALL SELECT 3
+         UNION ALL SELECT 4
+         UNION ALL SELECT 5
+         UNION ALL SELECT 6
+         UNION ALL SELECT 7
+         UNION ALL SELECT 8
+         UNION ALL SELECT 9) AS b CROSS
+      JOIN
+        (SELECT 0 AS a
+         UNION ALL SELECT 1
+         UNION ALL SELECT 2
+         UNION ALL SELECT 3
+         UNION ALL SELECT 4
+         UNION ALL SELECT 5
+         UNION ALL SELECT 6
+         UNION ALL SELECT 7
+         UNION ALL SELECT 8
+         UNION ALL SELECT 9) AS c) a ,
+                                   hours b
+   WHERE a.Date BETWEEN DATE_ADD(now() ,INTERVAL -31 DAY) AND DATE_ADD(now() ,INTERVAL -1 DAY)) t1
+LEFT OUTER JOIN
+  (SELECT date(DATE_ADD(STR_TO_DATE(c.created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR))AS date ,
+          hour(DATE_ADD(STR_TO_DATE(c.created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)) AS hour,
+          dayname(STR_TO_DATE(c.created_time, '%Y-%m-%dT%H:%i:%s+0000')) AS name ,
+          COUNT(*) AS COUNT,
+               avg(likes) AS likes,
+               avg(post_video_views) AS post_video_views,
+               avg(post_impressions) AS post_impressions,
+               avg(shares) AS shares,
+               avg(link_clicks) AS link_clicks,
+               avg(comments) AS comments
+   FROM fbposts_batch c
+   WHERE c.page_id ='{page_id}'
+     AND datediff(now(),str_to_date(c.created_time, '%Y-%m-%dT%H:%i:%s+0000')) <31
+     AND datediff(now(),str_to_date(c.created_time, '%Y-%m-%dT%H:%i:%s+0000')) >0
+   GROUP BY date(STR_TO_DATE(c.created_time, '%Y-%m-%dT%H:%i:%s+0000')) ,
+            hour(STR_TO_DATE(c.created_time, '%Y-%m-%dT%H:%i:%s+0000'))) AS t2 ON t1.date=t2.date
+AND t1.hour =t2.hour
+GROUP BY dayname(t1.date),
+         hour
+

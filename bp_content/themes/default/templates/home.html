@@ -1,35 +1,32 @@
 {% extends base_layout %}
 
-{% block header_title_lead %}{% endblock %}
 
 {% block content %}
 
     {% if user_id %}
-    <div class="jumbotron home_bp">
+    <div class="jumbotron ">
         <h1>
-            Google App Engine Boilerplate
+
         </h1>
+         <p style="text-align: center">
+
+
         <p>
-            {% trans %}Congratulations on your Google App Engine Boilerplate powered page.{% endtrans %}
-            <br><a href="http://github.com/coto/gae-boilerplate/blob/master/README.md" target="_blank">
-            {% trans %}Learn why this Boilerplate Rocks{% endtrans %}</a> {% trans %}or just{% endtrans %} 
-            <a href="http://github.com/coto/gae-boilerplate/" target="_blank">{% trans %}download the Source Code{% endtrans %}</a> 
-            {% trans %}to help you to create your application.{% endtrans %}
+            {% trans %}Ready to Analyze your pages? {% endtrans %}<a href="{{ uri_for("pages") }}">Click here!</a>
         </p>
     </div>
     {% else %}
     <div class="row">
         <div class="col-md-9">
-            <div class="home_bp">
+            <div class="">
                 <h1>
-                    Google App Engine Boilerplate
+
                 </h1>
+                <p style="text-align: center">
+
+                </p>
                 <p>
-                    {% trans %}Congratulations on your Google App Engine Boilerplate powered page.{% endtrans %}
-                    <br><a href="http://github.com/coto/gae-boilerplate/blob/master/README.md" target="_blank">
-                    {% trans %}Learn why this Boilerplate Rocks{% endtrans %}</a> {% trans %}or just{% endtrans %} 
-                    <a href="http://github.com/coto/gae-boilerplate/" target="_blank">{% trans %}download the Source Code{% endtrans %}</a> 
-                    {% trans %}to help you to create your application.{% endtrans %}
+
                 </p>
             </div>
         </div>
@@ -130,7 +127,7 @@
                     error.addClass("help-inline").appendTo( element.parent() );
                 }
             });
-            
+
             $("#password").passStrength({
                 shortPassText: '{% trans %}Short Password{% endtrans %}',
                 badPassText: '{% trans %}Insecure Password{% endtrans %}',

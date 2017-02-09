@@ -1,0 +1,123 @@
+{% extends base_layout %}
+ {% block mediaCSS %}
+<style>
+    .label-as-badge {
+        border-radius: 1em;
+        cursor: pointer;
+    }
+</style>
+ {% endblock %}
+{% block content %}
+
+<h1>{{ page_name }}</h1><a  class="btn btn-info" href="{{ uri_for('taxonomy', page_id=page_id) }}">Setup Taxonomy</a>
+<!-- Modal -->
+<div id="myModal" class="modal fade " role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" onclick="$('#modal-body').html('');">&times;</button>
+        <h4 class="modal-title">Video</h4>
+      </div>
+      <div class="modal-body" id="modal-body">
+
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal" >Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- end modal -->
+<h2>Published Posts</h2>
+    <table class="table table-striped"><tr><th>Post_id</th><th>Image</th><th>Type</th><th>Message</th><th>Time (UTC {{ timezone }})</th></tr>
+{% for post in posts %}
+    <tr>
+        <td><!-- <a class="btn btn-info" target="_blank" href="/realtime_counter/{{ post.id }}/?type=fixed">RT Reactions</a> --><a href="https://www.facebook.com/{{ post.id }}" target="_blank">FB</a></td>
+        <td><img src="{{ post.picture }}" style="width:70px;"></td><td><a href="{{ post.link}}" target="_blank">{{ post.type }}</a></td><td>
+
+            <table class="table">
+            {% if post.story !='' %}
+                <tr><td>Story</td><td>{{ post.story }}</td></tr>
+            {% endif %}
+                <tr><td>Headline copy</td><td>{{ post.message }}</td></tr>
+                <tr><td>Art.Title</td><td>{{ post.attachment_title }}</td></tr>
+                <tr><td>Art.Description</td><td>{{ post.attachment_description }}</td></tr>
+                <tr><td colspan="2">
+                    <span class="label label-as-badge label-info">default</span>
+                    {% for general_tax in page_general_taxonomies %}
+                        <span onclick="switch_badge(this,'{{ post.id }}');" class="label label-as-badge label-default {% if general_tax in post.taxonomies %} label-info {% endif %}">{{ general_tax }}</span>
+                    {% endfor %}
+                    {% if post.type=='photo' %}
+                        {% for general_tax in page_photo_taxonomies %}
+                            <span onclick="switch_badge(this,'{{ post.id }}');" class="label label-as-badge label-default {% if general_tax in post.taxonomies %} label-info {% endif %}">{{ general_tax }}</span>
+                        {% endfor %}
+                    {% endif %}
+                    {% if post.type=='link' %}
+                        {% for general_tax in page_link_taxonomies %}
+                            <span onclick="switch_badge(this,'{{ post.id }}');" class="label label-as-badge label-default {% if general_tax in post.taxonomies %} label-info {% endif %}">{{ general_tax }}</span>
+                        {% endfor %}
+                    {% endif %}
+                    {% if post.type=='video' %}
+                        {% for general_tax in page_video_taxonomies %}
+                            <span onclick="switch_badge(this,'{{ post.id }}');" class="label label-as-badge label-default {% if general_tax in post.taxonomies %} label-info {% endif %} ">{{ general_tax }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </td></tr>
+            </table>
+        </td><td>{{ post.created_time }}</td>
+    </tr>
+{% endfor %}
+    </table>
+<input type="hidden" value="{{ page_previous }}" id="previous">
+<input type="hidden" value="{{ page_next }}" id="next">
+{% if previous !='' %}
+    <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_previous|safe }}" class="btn btn-info">Load previous page    </a>
+{% endif %}
+{% if next !='' %}
+    <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_next|safe}}" class="btn btn-info">Load next page    </a>
+{% endif %}
+{% endblock %}
+
+{% block mediaJS %}
+
+<script>
+    function update_taxonomy(post_id,taxonomy, bool_taxonomy){
+        $.ajax({
+                url: '{{ uri_for("update-post-taxonomy") }}',
+                type: 'post',
+                data: { '_csrf_token': "{{ csrf_token() }}","post_id": post_id, "taxonomy": taxonomy,"bool_taxonomy": bool_taxonomy},
+                success: function (data) {
+                    console.log(data);
+                },
+                error: function(data){
+                  console.log(data);
+                }
+            });
+    }
+    function switch_badge(badge,post_id){
+        console.log(post_id);
+        badge_str = $(badge).html();
+        console.log(badge_str);
+        $(badge).toggleClass( "label-info" );
+        badge_bool = $(badge).hasClass("label-info");
+        console.log(badge_bool);
+        update_taxonomy(post_id, badge_str,badge_bool);
+    }
+    function deleteLiveVideo(videoid, status){
+        if(status=='SCHEDULED_UNPUBLISHED'|| status=='UNPUBLISHED' || status=='LIVE_NOW'){
+            if (confirm("Sure you want to delete this video?")){
+                window.location = '?action=delete_live&video_id=' +videoid;
+            }
+        }else{
+            alert('Cant delete published video. Use facebook admin.');
+        }
+    }
+
+    function changeLiveVideoStatus(videoid,status){
+        window.location = '?status='+ status +'&action=update_live&video_id=' +videoid;
+    }
+</script>
+{% endblock %}

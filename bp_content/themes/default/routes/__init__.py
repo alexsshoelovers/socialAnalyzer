@@ -14,6 +14,28 @@ _routes = [
     RedirectRoute('/secure/', handlers.SecureRequestHandler, name='secure', strict_slash=True),
     RedirectRoute('/settings/delete_account', handlers.DeleteAccountHandler, name='delete-account', strict_slash=True),
     RedirectRoute('/contact/', handlers.ContactHandler, name='contact', strict_slash=True),
+    RedirectRoute('/createLiveCounter/', handlers.CreateLiveCounter, name='create-counter', strict_slash=True),
+    RedirectRoute('/extendFbUserToken/', handlers.ExtendFbUserTokenRequestHandler, name='extend_fb_user_token', strict_slash=True),
+    RedirectRoute('/pages/', handlers.PagesHandler, name='pages', strict_slash=True),
+    RedirectRoute('/pages/<page_id>/config_page/', handlers.PagesConfigHandler, name='page_config', strict_slash=True),
+    RedirectRoute('/taxonomy/<page_id>/', handlers.TaxonomyHandler, name='taxonomy', strict_slash=True),
+    RedirectRoute('/config_page/', handlers.ConfigPageHandler, name='config_page', strict_slash=True),
+    RedirectRoute('/available_posts/<page_id>/', handlers.AvailablePostsHandler, name='available-posts', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/', handlers.PageStatsHandler, name='page-stats', strict_slash=True),
+    RedirectRoute('/schedule_live_video/<page_id>/', handlers.ScheduleLiveHandler, name='schedule-live', strict_slash=True),
+    RedirectRoute('/realtime_counter/<post_id>/', handlers.RealTimeCounterHandler, name='realtime_counter', strict_slash=True),
+    RedirectRoute('/general_config/', handlers.GeneralConfigHandler, name='general-config', strict_slash=True),
+    RedirectRoute('/testMysql/', handlers.TestMySQL, name='testMySQL', strict_slash=True),
+    RedirectRoute('/update_post_taxonomy/', handlers.UpdatePostTaxonomyHandler, name='update-post-taxonomy', strict_slash=True),
+    RedirectRoute('/taskqueue_updata_mysql/', handlers.UpdateMySQLHandler, name='update-mysql-handler', strict_slash=True),
+    RedirectRoute('/taskqueue_download_page/', handlers.task_downloadPageHandler, name='task-download-page-handler', strict_slash=True),
+    RedirectRoute('/download_page/<page_id>', handlers.trigger_downloadPageHandler, name='download-page-handler', strict_slash=True),
+    RedirectRoute('/query/<page_id>/', handlers.jsonQuery, name='jsonQuery', strict_slash=True),
+    RedirectRoute('/crontasks/fetch_new_posts/', handlers.fetchNewPostsHandler, name='fetch-new-posts', strict_slash=True),
+    RedirectRoute('/crontasks/fetch_new_posts_for_days/<number_of_days>/', handlers.fetchNewPostsDaysHandler, name='fetch-new-posts-days', strict_slash=True),
+    RedirectRoute('/taskqueue_download_page_fetch_page_fans/', handlers.taskGetPageFansInDate, name='get_page_fans', strict_slash=True),
+    RedirectRoute('/taskqueue_download_page_last_page_fans/', handlers.taskGetLastPageFans, name='get_last_page_fans', strict_slash=True),
+
 ]
 
 def get_routes():

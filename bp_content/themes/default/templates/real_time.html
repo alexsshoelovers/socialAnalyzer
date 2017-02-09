@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RealTime Counter</title>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap-theme.min.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+
+  <!-- <link rel="stylesheet" href="/resources/demos/style.css"> -->
+  <style>
+  #draggable { width: 150px; height: 150px; padding: 0.5em; }
+  </style>
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <script>
+  $( function() {
+    $( "#draggable0" ).draggable();
+    $( "#draggable3" ).draggable();
+    $( "#draggable1" ).draggable();
+    $( "#draggable2" ).draggable();
+    $( "#draggable4" ).draggable();
+    $( "#draggable5" ).draggable();
+    $( "#draggable6" ).draggable();
+    $( "#draggable7" ).draggable();
+    $( "#draggable8" ).draggable();
+    $( "#draggable9" ).draggable();
+    $( "#draggable10" ).draggable();
+    $( "#draggable20" ).draggable();
+  } );
+  </script>
+</head>
+<!-- <body style="background-image: url('/default/img/killerwaveanimated.gif')"> -->
+<body>
+<!-- Trigger the modal with a button -->
+
+<div id="draggable8" type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal" style="top:0;left:0;">+</div>
+<div id="draggable6" class="" style="position:absolute;left:200px;top:400px;width:200px;height:200px;">
+<img src="/default/img/dog_sample.jpg" id="img_draggable6" style="width:400px;height:400px;"><br/>
+</div>
+<div id="draggable7" class="" style="position:absolute;left:200px;top:0px;width:200px;height:200px;">
+<img src="/default/img/cat_sample.jpg" id="img_draggable7" style="left:200px;width:400px;height:400px;"><br/>
+</div>
+<div id="draggable9" class="" style="position:absolute;left:600px;top:400px;width:200px;height:200px;">
+<img src="/default/img/flats_sample.jpg" id="img_draggable9" style="width:400px;height:400px;"><br/>
+</div>
+<div id="draggable10" class="" style="position:absolute;left:600px;top:0px;width:200px;height:200px;">
+<img src="/default/img/shoe_sample.jpg" id="img_draggable10" style="left:200px;width:400px;height:400px;"><br/>
+</div>
+
+
+<div id="draggable3" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_like.png" style="width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_like">0</h1>
+</div>
+<br/>
+<div id="draggable1" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_love.png" style=" background-color: transparent;width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_love">0</h1>
+</div>
+<br/>
+<div id="draggable2" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_haha.png" style=" background-color: transparent;width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_haha">0</h1>
+</div>
+<div id="draggable20" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_wow.png" style=" background-color: transparent;width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_wow">0</h1>
+</div>
+<br/>
+<div id="draggable4" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_sad.png" style=" background-color: transparent;width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_sad">0</h1>
+</div>
+<br/>
+<div id="draggable5" class="" style="width:200px;height:200px;">
+<img src="/default/img/fb_angry.png" style=" background-color: transparent;width:200px;height:200px;"><br/>
+<h1 style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_angry">0</h1>
+</div>
+<div id="draggable0" class="" style="position:absolute;left:200px;top:400px;width:1000px;height:60px;"">
+<h1 style="background-color: rgba(255, 255, 255, 0.3) ;text-align: center;text-shadow: 2px 2px #ffffff;" id="strTitle">FB RealTime Counter Sample</h1>
+</div>
+
+<!-- Modal -->
+<div id="myModal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+
+    <!-- Modal content-->
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+        <h4 class="modal-title">Modal Header</h4>
+      </div>
+      <div class="modal-body">
+        <table class="table table-striped">
+            <tr>
+                <th>Name</th>
+                <th></th>
+                 <th>Visible</th>
+            </tr>
+            <tr>
+                <td>Post ID (Update once it appears on the timeline</td>
+                <td><input type="text" id ="formPost_Id"><div class="btn btn-info" onclick="update_post_id($('#formPost_Id').val());">Upd</div></td>
+                 <td><input type="checkbox"  checked value="1" onclick="hideImage('img_draggable0',this);"></td>
+            </tr>
+            <tr>
+                <td>Title</td>
+                <td><input type="text" id ="formTitle"><div class="btn btn-info" onclick="updateText('strTitle','formTitle');">Upd</div></td>
+                 <td><input type="checkbox"  checked value="1" onclick="hideImage('img_draggable0',this);"></td>
+            </tr>
+            <tr>
+                <td>Image1</td>
+                <td><input type="text" id ="Image1Url"><div class="btn btn-info" onclick="updateImg('img_draggable7','Image1Url');">Upd</div></td>
+                 <td><input type="checkbox"  checked value="1" onclick="hideImage('img_draggable7',this);"></td>
+            </tr>
+            <tr>
+                <td>Image2</td>
+               <td><input type="text" id ="Image2Url"><div class="btn btn-info" onclick="updateImg('img_draggable10','Image2Url');" >Upd</div></td>
+                <td><input type="checkbox" checked  value="1" onclick="hideImage('img_draggable10',this);"></td>
+            </tr>
+            <tr>
+                <td>Image3</td>
+               <td><input type="text" id ="Image3Url"><div class="btn btn-info"  onclick="updateImg('img_draggable6','Image3Url');">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('img_draggable6',this);"></td>
+            </tr>
+            <tr>
+                <td>Image4</td>
+                <td><input type="text" id ="Image4Url"><div class="btn btn-info" onclick="updateImg('img_draggable9','Image4Url');" >Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('img_draggable9',this);"></td>
+            </tr>
+            <tr>
+                <td>Background</td>
+                <td><input type="text" id ="BackgroundImage"><div class="btn btn-info" onclick="updateBackground('BackgroundImage');">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" ></td>
+            </tr>
+            <tr>
+                <td>Background Color</td>
+                <td><input type="text" id ="BackgroundColor"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" ></td>
+            </tr>
+            <tr>
+                <td>Text Colors</td>
+                <td><input type="text" id ="Image4Url" ><div class="btn btn-info">Upd</div></td>
+                <td></td>
+            </tr>
+            <tr>
+                <td>Wow</td>
+                <td><input type="text" id ="WowText" ><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable20',this);"></td>
+            </tr>
+            <tr>
+                <td>Love</td>
+                <td><input type="text" id ="LoveText"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable1',this);"></td>
+            </tr>
+            <tr>
+                <td>Like</td>
+                <td><input type="text" id ="LikeText"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable3',this);"></td>
+            </tr>
+            <tr>
+                <td>Sad</td>
+                <td><input type="text" id ="SadText"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable4',this);"></td>
+            </tr>
+            <tr>
+                <td>Angry</td>
+                <td><input type="text" id ="AngryText"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable5',this);"></td>
+            </tr>
+            <tr>
+                <td>Haha</td>
+                <td><input type="text" id ="HahaText"><div class="btn btn-info">Upd</div></td>
+                <td><input type="checkbox"  checked  value="1" onclick="hideImage('draggable2',this);"></td>
+            </tr>
+        </table>
+      </div>
+      <div id="draggable0" class="" style="position:absolute;left:200px;top:400px;width:1000px;height:60px;"">
+        <h1 style="background-color: rgba(255, 255, 255, 0.3) ;text-align: center;text-shadow: 2px 2px #ffffff;" id="strRealTimeCounter">Interactions Count</h1>
+        </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- end modal -->
+
+
+</body>
+<script>
+function updateBackground(image_name){
+    var backbground_image = $('#' + image_name).val();
+    // $('body').css({'backgroundImage' : 'url('+ backbground_image +')', 'background-size':'cover','background-repeat':'no-repeat','background-position':'center center'});
+    $('body').css({'backgroundImage' : 'url('+ backbground_image +')', 'background-size':'cover'});
+}
+function hideImage(image_name, chkobj){
+    if(!chkobj.checked){
+        $('#'+image_name).hide();
+    }else{
+        $('#'+image_name).show();
+    }
+}
+
+function updateText(destiny, source){
+    $('#' + destiny).text($('#' + source).val());
+}
+
+function updateImg(image_name,name, value){
+    $('#' + image_name).attr('src', $('#' + name).val());
+}
+
+
+
+// console.log(reactions_url);
+
+post_id = '{{ post_id}}';
+
+function update_post_id(new_post_id){
+    post_id=new_post_id;
+
+}
+
+setInterval(function(){
+    if(post_id!='UNDEFINED'){
+        url = 'http://fbfirstcomment.appspot.com/getcounter/?key=' + post_id;
+        $.ajax({
+                url: reactions_url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                }
+            });
+    }
+
+}, 1500);
+setInterval(function() {
+        if(post_id!='UNDEFINED'){
+            reactions_url = 'https://graph.facebook.com/v2.6/'+ post_id +'?fields=reactions.type(LIKE).summary(total_count).limit(0).as(like),reactions.type(LOVE).summary(total_count).limit(0).as(love),reactions.type(WOW).summary(total_count).limit(0).as(wow),reactions.type(HAHA).summary(total_count).limit(0).as(haha),reactions.type(SAD).summary(total_count).limit(0).as(sad),reactions.type(ANGRY).summary(total_count).limit(0).as(angry)&access_token={{ access_token }}';
+            $.ajax({
+                url: reactions_url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                    likes = data.like.summary.total_count;
+                    loves = data.love.summary.total_count;
+                    hahas = data.haha.summary.total_count;
+                    wows = data.wow.summary.total_count;
+                    sads = data.sad.summary.total_count;
+                    angrys = data.angry.summary.total_count;
+                    $('#cnt_like').text(likes);
+                    $('#cnt_love').text(loves);
+                    $('#cnt_wow').text(wows);
+                    $('#cnt_angry').text(angrys);
+                    $('#cnt_sad').text(sads);
+                    $('#cnt_haha').text(hahas);
+
+
+                }
+            });
+        }
+}, 1500);
+
+
+</script>
+</html>

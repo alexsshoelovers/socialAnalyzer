@@ -1,0 +1,155 @@
+{% extends base_layout %}
+
+ {% block navbar %}
+ {% endblock %}
+{% block header %}
+ {% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class='row '>
+         <div class="col-xs-8  col-xs-offset-2 text-center">
+            <h2 style="background-color: rgba(255, 255, 255, 0.3) ;text-align: center;text-shadow: 2px 2px #ffffff;" id="strTitle">{{ post_message }}</h2>
+        </div>
+    </div>
+    <div class='row '>
+     <div class="col-xs-6  col-xs-offset-3 text-center">
+         <!-- <img style="width:100%;"src="{{ picture}}"/> -->
+{% set list = post_id.split('_') %}
+            <div class="fb-post"
+          data-href="https://www.facebook.com/{{ list[0] }}/posts/{{ list[1]}}/"
+          data-width="500">
+
+          </div>
+        </div>
+    </div>
+    <div class='row '>
+        <div class="col-xs-6  col-xs-offset-3 text-center">
+            <p></p>
+        </div>
+    </div>
+    <div class='row '>
+         <div class="col-xs-1 col-xs-offset-3 text-center">
+         <img src="/default/img/fb_like.png" style="width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_like">0</p>
+         </div>
+         <div class="col-xs-1  text-center">
+         <img src="/default/img/fb_love.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_love">0</p>
+         </div>
+         <div class="col-xs-1  text-center">
+         <img src="/default/img/fb_haha.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_haha">0</p>
+         </div>
+         <div class="col-xs-1  text-center">
+         <img src="/default/img/fb_wow.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_wow">0</p>
+         </div>
+         <div class="col-xs-1  text-center">
+         <img src="/default/img/fb_sad.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_sad">0</p>
+         </div>
+         <div class="col-xs-1  text-center">
+         <img src="/default/img/fb_angry.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+        <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_angry">0</p>
+         </div>
+    </div>
+    <div class='row '>
+         <div class="col-xs-12  text-center">
+             <div id="draggable0" class="" >
+                <h1 style="background-color: rgba(255, 255, 255, 0.3) ;text-align: center;text-shadow: 2px 2px #ffffff;" id="strRealTimeCounter">Interactions Count</h1> interactions.
+                <br/>speed <h3 id="strRealTimeSpeedCounter"> </h3>
+            </div>
+         </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block mediaJS %}
+<script>
+
+function numberWithCommas(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      xfbml      : true,
+      version    : 'v2.8'
+    });
+  };
+  (function(d, s, id){
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) {return;}
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/sdk.js";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+<script>
+post_id = '{{ post_id}}';
+
+function update_post_id(new_post_id){
+    post_id=new_post_id;
+
+}
+
+setInterval(function(){
+    if(post_id!='UNDEFINED'){
+        url = 'http://fbfirstcomment.appspot.com/getcounter/?key=' + post_id;
+        $.ajax({
+                url: url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                    console.log(data[0].rt_{{ post_id}});
+                    console.log(data[0].speed );
+                    speed = data[0].speed;
+                    interactions = data[0].rt_{{ post_id}};
+                    $('#strRealTimeCounter').html(numberWithCommas(interactions));
+                    $('#strRealTimeSpeedCounter').html(numberWithCommas(speed));
+
+                }
+            });
+    }
+
+}, 1500);
+
+
+setInterval(function() {
+        if(post_id!='UNDEFINED'){
+            reactions_url = 'https://graph.facebook.com/v2.6/'+ post_id +'?fields=reactions.type(LIKE).summary(total_count).limit(0).as(like),reactions.type(LOVE).summary(total_count).limit(0).as(love),reactions.type(WOW).summary(total_count).limit(0).as(wow),reactions.type(HAHA).summary(total_count).limit(0).as(haha),reactions.type(SAD).summary(total_count).limit(0).as(sad),reactions.type(ANGRY).summary(total_count).limit(0).as(angry)&access_token={{ access_token }}';
+            $.ajax({
+                url: reactions_url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                    likes = data.like.summary.total_count;
+                    loves = data.love.summary.total_count;
+                    hahas = data.haha.summary.total_count;
+                    wows = data.wow.summary.total_count;
+                    sads = data.sad.summary.total_count;
+                    angrys = data.angry.summary.total_count;
+                    $('#cnt_like').text(likes);
+                    $('#cnt_love').text(loves);
+                    $('#cnt_wow').text(wows);
+                    $('#cnt_angry').text(angrys);
+                    $('#cnt_sad').text(sads);
+                    $('#cnt_haha').text(hahas);
+
+
+                }
+            });
+        }
+}, 1500);
+
+
+</script>
+{% endblock %}
+

@@ -34,7 +34,6 @@ from lib.decorators import user_required
 from lib.decorators import taskqueue_method
 from lib import facebook
 
-
 class LoginRequiredHandler(BaseHandler):
     def get(self):
         continue_url, = self.request.get('continue', allow_multiple=True)

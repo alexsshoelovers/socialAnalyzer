@@ -1,0 +1,49 @@
+
+elements_array = [
+    {
+        "type": "image",
+        "width": "",
+        "height":"",
+        "name":"",
+        "visible":"",
+        "id":""
+        "src":""
+        "update_function"
+    },
+    {
+        "type": "image",
+        "width": "",
+        "height":"",
+        "name":"",
+        "visible":"",
+        "id":""
+        "src":""
+    },
+    {
+        "type": "image",
+        "width": "",
+        "height":"",
+        "name":"",
+        "visible":"",
+        "id":""
+        "src":""
+    },
+    {
+        "type": "image",
+        "width": "",
+        "height":"",
+        "name":"",
+        "visible":"",
+        "id":""
+        "src":""
+    },
+    {
+        "type": "image",
+        "width": "",
+        "height":"",
+        "name":"",
+        "visible":"",
+        "id":""
+        "src":""
+    },
+]

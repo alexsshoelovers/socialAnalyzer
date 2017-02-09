@@ -232,7 +232,7 @@ def parse_if_int(s):
     """Try to parse a string to an int.
     Return the int on success or string on failure.
     Useful for parsing entity ids from urls when
-    entity ids could be manually assigned strings or 
+    entity ids could be manually assigned strings or
     automatically assigned numbers.
     """
     try:

@@ -31,7 +31,14 @@ class User(User):
     tz = ndb.StringProperty()
     #: Account activation verifies email
     activated = ndb.BooleanProperty(default=False)
-	
+
+    fb_access_token= ndb.StringProperty()
+
+    report_timezone = ndb.FloatProperty(default = 0)
+
+    isadmin = ndb.BooleanProperty(default=False)
+
+
     @classmethod
     def get_by_email(cls, email):
         """Returns a user object based on an email.
@@ -107,13 +114,13 @@ class LogEmail(ndb.Model):
 
 class SocialUser(ndb.Model):
     PROVIDERS_INFO = { # uri is for OpenID only (not OAuth)
-        'google': {'name': 'google', 'label': 'Google', 'uri': 'gmail.com'},
-        'github': {'name': 'github', 'label': 'Github', 'uri': ''},
+        # 'google': {'name': 'google', 'label': 'Google', 'uri': 'gmail.com'},
+        # 'github': {'name': 'github', 'label': 'Github', 'uri': ''},
         'facebook': {'name': 'facebook', 'label': 'Facebook', 'uri': ''},
-        'linkedin': {'name': 'linkedin', 'label': 'LinkedIn', 'uri': ''},
-        'myopenid': {'name': 'myopenid', 'label': 'MyOpenid', 'uri': 'myopenid.com'},
-        'twitter': {'name': 'twitter', 'label': 'Twitter', 'uri': ''},
-        'yahoo': {'name': 'yahoo', 'label': 'Yahoo!', 'uri': 'yahoo.com'},
+        # 'linkedin': {'name': 'linkedin', 'label': 'LinkedIn', 'uri': ''},
+        # 'myopenid': {'name': 'myopenid', 'label': 'MyOpenid', 'uri': 'myopenid.com'},
+        # 'twitter': {'name': 'twitter', 'label': 'Twitter', 'uri': ''},
+        # 'yahoo': {'name': 'yahoo', 'label': 'Yahoo!', 'uri': 'yahoo.com'},
     }
 
     user = ndb.KeyProperty(kind=User)
@@ -141,7 +148,7 @@ class SocialUser(ndb.Model):
             return False
         else:
             return True
-    
+
     @classmethod
     def check_unique_user(cls, provider, user):
         # pair (user, provider) should be unique
@@ -155,7 +162,7 @@ class SocialUser(ndb.Model):
     def check_unique(cls, user, provider, uid):
         # pair (provider, uid) should be unique and pair (user, provider) should be unique
         return cls.check_unique_uid(provider, uid) and cls.check_unique_user(provider, user)
-    
+
     @staticmethod
     def open_id_providers():
         return [k for k,v in SocialUser.PROVIDERS_INFO.items() if v['uri']]

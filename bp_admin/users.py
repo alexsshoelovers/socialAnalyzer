@@ -23,6 +23,7 @@ class AdminUserGeoChartHandler(BaseHandler):
 
 class EditProfileForm(forms.EditProfileForm):
     activated = fields.BooleanField('Activated')
+    isadmin = fields.BooleanField('Isadmin')
 
 
 class AdminUserListHandler(BaseHandler):
@@ -73,7 +74,9 @@ class AdminUserListHandler(BaseHandler):
                              ('last_name', 'Last Name'),
                              ('email', 'Email'),
                              ('country', 'Country'),
-                             ('tz', 'TimeZone')],
+                             ('tz', 'TimeZone'),
+                             ('isadmin', 'Is Admin'),
+                             ],
             "users": users,
             "count": qry.count()
         }

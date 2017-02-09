@@ -1,0 +1,25 @@
+{% extends base_layout %}
+
+{% block header_title_lead %}{% endblock %}
+ {% block subnavbar %}{% endblock %}
+{% block content %}
+   {% if pages|length ==0 %}
+    You currently have no pages, so ... <div onclick='facebookLogin();' class='btn btn-info'>Add a page</div>
+    {% else %}
+        <table class='table'>
+        <tr><th></th><th>Page</th><th>Action</th></tr>
+        {% for page in pages %}
+            <tr>
+                <td><img width="40px" height="40px" src="https://graph.facebook.com/{{ page.page_id }}/picture?type=square"></td>
+                <td>{{ page.name }}</td>
+                <td>
+                    <a class='btn btn-info' href='{{ uri_for("config_page") }}?page_ndb_key={{ page.key.id() }}'>Config <i class="glyphicon-wrench glyphicon"></i></a>
+                    <a class='btn btn-warning' href='?action=delete&page_ndb_key={{ page.key.id() }}'>Delete Page</a></td></tr>
+        {% endfor%}
+        </table>
+    <div onclick='facebookLogin();' class='btn btn-info'>Add another page</div>
+    {% endif %}
+    <ul id='pagestag'>
+    </ul>
+
+{% endblock %}

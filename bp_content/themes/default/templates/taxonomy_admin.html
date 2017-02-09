@@ -1,0 +1,58 @@
+{% extends base_layout %}
+
+{% block content %}
+
+<h1>Taxonomy Definition for <a href="{{ uri_for('available-posts', page_id = page.page_id )}}">{{ page.name }}</a></h1>
+<h1>(Comma separated list of taxonomies)</h1>
+<form action="{{ uri_for('taxonomy', page_id=page.page_id) }}" method="post">
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+<table class="table table-striped">
+    <tr>
+        <td>
+            General Taxonomies
+        </td>
+        <td>
+            <textarea id="general_taxonomy" name="general_taxonomy">{{ page.general_taxonomies }}</textarea>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Link Taxonomies
+        </td>
+        <td>
+            <textarea id="link_taxonomy" name="link_taxonomy">{{ page.link_taxonomies}}</textarea>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Video Taxonomies
+        </td>
+        <td>
+            <textarea id="video_taxonomy" name="video_taxonomy">{{ page.video_taxonomies}}</textarea>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            Photo Taxonomies
+        </td>
+        <td>
+            <textarea id="photo_taxonomy" name="photo_taxonomy">{{ page.photo_taxonomies}}</textarea>
+        </td>
+    </tr>
+    <tr>
+        <td>
+
+        </td>
+        <td>
+           <input type="submit" class='btn btn-info' value="Save"></div>
+        </td>
+    </tr>
+</table>
+</form>
+{% endblock %}
+
+{% block mediaJS %}
+<script>
+
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-application: sandengine
+application: socialanalyzer-157404
 version: dev
 runtime: python27
 api_version: 1
@@ -78,9 +78,9 @@ handlers:
   static_files: bp_content/themes/\1/static/js/\2
   upload: bp_content/themes/(\w*)/static/js/(.*\.js)$
 
-- url: /(\w*)/img/(.*\.(gif|png|jpg|jpeg))
+- url: /(\w*)/img/(.*\.(gif|png|jpg|jpeg|mov))
   static_files: bp_content/themes/\1/static/img/\2
-  upload: bp_content/themes/(\w*)/static/img/(.*\.(gif|png|jpg|jpeg))
+  upload: bp_content/themes/(\w*)/static/img/(.*\.(gif|png|jpg|jpeg|mov))
 
 - url: /(\w*)/fonts/(.*\.eot)$
   mime_type: application/vnd.ms-fontobject
@@ -128,6 +128,8 @@ libraries:
   version: "0.15"
 - name: pycrypto
   version: "2.6"
+- name: MySQLdb
+  version: "latest"
 
 error_handlers:
   # Only errors with error_code, don't put a default error here

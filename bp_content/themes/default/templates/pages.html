@@ -1,0 +1,181 @@
+{% extends base_layout %}
+
+{% block content %}
+    {% if pages|length >0 %}
+        <table class='table'>
+        <tr><th></th><th>Page</th><th>Action</th></tr>
+        {% for page in pages %}
+            <tr>
+                <td><img width="40px" height="40px" src="https://graph.facebook.com/{{ page.page_id }}/picture?type=square"></td>
+                <td>{{ page.name }}</td>
+                <td>
+                    <a class='btn btn-info' href='{{ uri_for("available-posts",page_id=page.key.id()  ) }}'>Posts <i class="glyphicon-th-list glyphicon"></i></a>
+                    <a class='btn btn-info' href='{{ uri_for("page-stats",page_id=page.key.id()  ) }}'><i class="glyphicon-stats glyphicon"></i></a>
+                    <a class='btn btn-info' target="_blank" href='https://facebook.com/{{ page.key.id() }}' title="Go to"><i class="glyphicon glyphicon-share-alt" title="Go To"></i></a>
+                    <a href="#" onclick="trigger_load('{{ page.key.id() }}');return false;" class="btn btn-info" alt="Batch load 2 days of posts" title="Batch load 2 days of posts"><i class="glyphicon glyphicon-repeat" title="Batch load 2 days of posts"></i><a>
+                    {% if user.isadmin %}
+                    <a href='{{ uri_for("page_config", page_id=page.key.id() ) }}' onclick="" class="btn btn-info" alt="Config page" title="Config page"><i class="glyphicon glyphicon-cog" title="Config page"></i><a>
+                    {% endif %}
+                    <a class='btn btn-warning' href='?action=delete&page_ndb_key={{ page.key.id() }}' title="Delete page"><i class="glyphicon glyphicon-trash" title="Delete page"></i></a>
+
+                </td></tr>
+        {% endfor%}
+        </table>
+    {% else %}
+        No facebook pages added... add one now
+    {% endif %}
+    <div onclick='addOwnPage();' class='btn btn-info'>Add one of your pages</div>, search for one: <input id="fbsearchtxt" type="text"/><div onclick='facebookSearch();' class='btn btn-info'>Search</div> or use the Facebook Page Id <input id="fb_page_id" type="text"/><div onclick='page_id_Search();' class='btn btn-info'>Search</div>
+    <div id="pagestagsearch"></div>
+    <ul id='pagestag'>
+    </ul>
+
+{% endblock %}
+
+{% block mediaJS %}
+<script>
+    function trigger_load(page_id){
+        if(confirm('Sure you want to start downloading Page content? (process can take a while and consume your monthly credits if launched repeteadly) ')){
+            $.ajax({
+                url: '/download_page/'+ page_id +'/',
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    alert(data);
+                }
+            });
+        }
+
+    }
+    function page_id_Search(){
+        $('#pagestagsearch').html("");
+        var fb_page_id = $("#fb_page_id").val();
+        FB.login(function(response){
+            console.log(response);
+            var accessToken = response.authResponse.accessToken;
+            var user_id = response.authResponse.userID;
+            console.log(accessToken);
+            var facebook_search_url = '/'+ fb_page_id +'?fields=picture,likes,name' ;
+            $.ajax({
+                    url: '{{ uri_for("extend_fb_user_token") }}',
+                    type: 'get',
+                    data: {'token': accessToken, 'user_id': user_id},
+                    dataType: 'text',
+                    success: function (data) {
+                        accessToken=data;
+                        FB.api(facebook_search_url, function(response){
+                            var rows = '';
+                            strheader  = "<tr><th></th><th>Fbid</th><th>Name</th><th>Likes</th><th>Add Analyzer</th><th>Visit</th></tr>"
+                                account_data = response;
+
+                                rows = rows +'<tr><td><img src="' + account_data.picture.data.url + '"> </td><td>' + account_data.id + ' </td><td>'+ account_data.name +'</td><td>'+ numberWithCommas(account_data.likes) + '</td><td>  <a href="?action=add&page_name='+ account_data.name +'&page_id='+ account_data.id +'&page_token='+ account_data.access_token +'">ADD ' + account_data.name + '</a> </td><td> <a target="_blank" href="http://www.facebook.com/' + account_data.id + '">Go</a></td></tr>';
+                            strtable = '<table class="table" >' + strheader + rows +'</table>'
+                            $('#pagestagsearch').html(strtable);
+                        },{access_token: accessToken});
+                    }
+                });
+
+
+        }, {scope:'user_likes, public_profile,manage_pages, read_insights, read_audience_network_insights, publish_pages'});
+
+
+    }
+     $("#fbsearchtxt").keyup(function(event){
+        if(event.keyCode == 13){
+            facebookSearch();
+        }
+    });
+        $("#fb_page_id").keyup(function(event){
+        if(event.keyCode == 13){
+            page_id_Search();
+        }
+    });
+    $("#fbsearchtxt").focus();
+
+    //This will sort likes array
+    function SortFBSearchPagesByLikes(a, b){
+      var aLikes = a.likes;
+      var bLikes = b.likes;
+      return ((aLikes < bLikes) ? -1 : ((aLikes > bLikes) ? 1 : 0));
+    }
+
+    function numberWithCommas(x) {
+        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    function facebookSearch(){
+        $('#pagestag').html("");
+        $('#pagestagsearch').html("");
+        FB.login(function(response){
+            console.log(response);
+            var accessToken = response.authResponse.accessToken;
+            var user_id = response.authResponse.userID;
+            console.log(accessToken);
+            var facebook_search_url = '/search?fields=picture,likes,name&type=page&q=' + $('#fbsearchtxt').val();
+            $.ajax({
+                    url: '{{ uri_for("extend_fb_user_token") }}',
+                    type: 'get',
+                    data: {'token': accessToken, 'user_id':user_id},
+                    dataType: 'text',
+                    success: function (data) {
+                        accessToken=data;
+                        FB.api(facebook_search_url, function(response){
+                            accounts = response.data;
+                            accounts.sort(SortFBSearchPagesByLikes).reverse();
+                            var rows = '';
+                            console.log(accounts);
+                            strheader  = "<tr><th></th><th>Fbid</th><th>Name</th><th>Likes</th><th>Add Analyzer</th><th>Visit</th></tr>"
+                            for(account in accounts){
+                                account_data = accounts[account];
+
+                                rows = rows +'<tr><td><img src="' + account_data.picture.data.url + '"> </td><td>' + account_data.id + ' </td><td>'+ account_data.name +'</td><td>'+ numberWithCommas(account_data.likes) + '</td><td>  <a href="?action=add&page_name='+ account_data.name +'&page_id='+ account_data.id +'&page_token='+ account_data.access_token +'">ADD ' + account_data.name + '</a> </td><td> <a target="_blank" href="http://www.facebook.com/' + account_data.id + '">Go</a></td></tr>'
+                            }
+                            strtable = '<table class="table" >' + strheader + rows +'</table>'
+                            $('#pagestagsearch').html(strtable);
+                        },{access_token: accessToken});
+                    }
+                });
+
+
+        }, {scope:'public_profile, read_insights, read_audience_network_insights, publish_pages'});
+    }
+
+    function addOwnPage(){
+        $('#pagestag').html("");
+        $('#pagestagsearch').html("");
+        FB.login(function(response){
+            console.log(response);
+            var accessToken = response.authResponse.accessToken;
+            var user_id = response.authResponse.userID;
+            console.log(accessToken);
+            $.ajax({
+                    url: '{{ uri_for("extend_fb_user_token") }}',
+                    type: 'get',
+                    data: {'token': accessToken, 'user_id': user_id},
+                    dataType: 'text',
+                    success: function (data) {
+                        accessToken=data;
+                        FB.api('/me/accounts?fields=name,id,picture,access_token', function(response){
+                            accounts = response.data;
+                            var rows = '';
+                            // console.log(accounts);
+                            var counter = 0;
+                            for(account in accounts){
+                                account_data = accounts[account];
+                                rows = rows +'<tr><td><img src="'+ account_data.picture.data.url +'" style="width:50px;"></td><td><a target="_blank" href="https://www.facebook.com/'+ account_data.id +'"> '+ account_data.name +'</a></td><td><a  class="btn btn-info" target="" href="?action=add&page_name='+ account_data.name +'&page_id='+ account_data.id +'&page_token='+ account_data.access_token +'&user_access_token='+ accessToken +'">Add analyzer</a></td></tr>'
+                                counter++;
+
+                            }
+                            if( counter>0){
+                                rows = '<br/><h2>Your Pages</h2><table class="table table-striped"><tr><th>Name</th><th>Page</th><th>Action</th></tr>' +rows +'</table>'
+                                $('#pagestag').html(rows);
+                             }
+
+                        },{access_token: accessToken});
+                    }
+                });
+
+
+        }, {scope:'public_profile,read_insights, read_audience_network_insights, publish_pages'});
+    }
+</script>
+{% endblock %}
+

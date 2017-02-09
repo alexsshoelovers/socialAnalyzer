@@ -2,3 +2,15 @@ cron:
 - description: delete old user tokens
   url: /admin/crontasks/cleanuptokens
   schedule: every monday 01:00
+
+- description: update pages last posts info
+  url: /crontasks/fetch_new_posts/
+  schedule: every 8 hours
+
+- description: update pages last posts info fast to have 30 minutes updates on changes for the day
+  url: /crontasks/fetch_new_posts_for_days/1/
+  schedule: every 30 minutes
+
+# - description: get last months fans
+#   url: /taskqueue_download_page_last_page_fans/
+#   schedule: 2 of month 09:00

@@ -1,0 +1,16 @@
+queue:
+# configure the default queue
+- name: default
+  rate: 3/s
+  retry_parameters:
+    # task will stop retrying ONLY when BOTH LIMITS ARE REACHED
+    task_retry_limit: 5
+    task_age_limit: 1s
+
+# will also use this for watson
+- name: db-update
+  rate: 2/s
+  retry_parameters:
+    # task will stop retrying ONLY when BOTH LIMITS ARE REACHED
+    task_retry_limit: 15
+    task_age_limit: 1s

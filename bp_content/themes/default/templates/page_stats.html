@@ -1,0 +1,275 @@
+{% extends base_layout %}
+ {% block mediaCSS %}
+ {% for csslib in css %}
+    <link rel="stylesheet" type="text/css" href="{{ csslib }}">
+    <style type="text/css">
+        @media print { body { -webkit-print-color-adjust: exact; } }
+
+        .compareTitle { display: none; }
+    </style>
+ {% endfor %}
+
+
+
+
+<style>
+
+</style>
+ {% endblock %}
+{% block content %}
+    {% if page %}
+        <h1><a href="{{ uri_for('available-posts', page_id = page.page_id )}}">{{ page.name }}</a> ( {{  '{0:,}'.format(page_likes) }} likes )</h1>
+        <table>
+            <tr>
+                <td width="50%">
+                </td>
+                <td width="50%">
+                    <h2>Compare with</h2>
+                    <select id="opt_page">
+                    {% for page in pages %}
+                        <option value="{{ page.page_id }}"">{{ page.name }}</option>
+                    {% endfor %}
+                    </select>
+                    <div class="btn btn-info btn-small small" onclick="compareStats();">Go</div>
+                </td>
+            </tr>
+             <tr>
+                <td>
+                    <h2>Days/Posts Recorded</h2>
+                    <div id='output_days_posts_recorded'>Loading stats...</div>
+                </td>
+                <td>
+                    <h2 class=compareTitle>Days/Posts Recorded</h2>
+                    <div id='output_days_posts_recorded2'></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h1>Weekly Calendar Stats </h1>
+                    <ul class="nav nav-pills">
+                      <li role="presentation" onclick="change_content_type('');return false;" class="active"><a href="#">All</a></li>
+                      <li role="presentation"><a onclick="change_content_type('link');return false;" href="#">Link</a></li>
+                      <li role="presentation"><a onclick="change_content_type('photo');return false;" href="#">Photo</a></li>
+                      <li role="presentation"><a onclick="change_content_type('video');return false;" href="#">Video</a></li>
+                      <li role="presentation"><a onclick="change_content_type('with');return false;" href="#">With</a></li>
+                      <li role="presentation"><a onclick="change_content_type('shared');return false;" href="#">Shared</a></li>
+                      <li role="presentation"><a onclick="change_content_type('live');return false;" href="#">Live</a></li>
+                    </ul>
+                    <div id='output_date_hour_posts'>Loading stats...</div>
+                </td>
+                <td>
+                    <h1 class="compareTitle" >Weekly Calendar Stats</h1>
+                    <ul class="nav nav-pills compareTitle">
+                      <li role="presentation" class="active"><a onclick="change_content_type('');return false;"  href="#">All</a></li>
+                      <li role="presentation"><a onclick="change_content_type('link');return false;" href="#">Link</a></li>
+                      <li role="presentation"><a onclick="change_content_type('photo');return false;" href="#">Photo</a></li>
+                      <li role="presentation"><a onclick="change_content_type('video');return false;" href="#">Video</a></li>
+                      <li role="presentation"><a onclick="change_content_type('with');return false;" href="#">With</a></li>
+                      <li role="presentation"><a onclick="change_content_type('shared');return false;" href="#">Shared</a></li>
+                      <li role="presentation"><a onclick="change_content_type('live');return false;" href="#">Live</a></li>
+                    </ul>
+                    <div id='output_date_hour_posts2'></div>
+                </td>
+            </tr>
+             <tr>
+                <td>
+                    <h1>Content Type Distribution </h1>
+                    <div id='output_post_type_distribution'>Loading stats...</div>
+                </td>
+                <td>
+                     <h1 class="compareTitle">Content Type Distribution </h1>
+                    <div id='output_post_type_distribution2'></div>
+                </td>
+            </tr>
+             <tr>
+                <td>
+                    <h1>Day - Type Histogram </h1>
+                    <div id='output_day_type_distribution'>Loading stats...</div>
+                </td>
+                <td>
+                     <h1 class="compareTitle">Day - Type Histogram</h1>
+                    <div id='output_day_type_distribution2'></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <h1>Hour - Type Histogram </h1>
+                    <div id='output_hour_type_distribution'>Loading stats...</div>
+                </td>
+                <td>
+                     <h1 class="compareTitle">Hour - Type Histogram</h1>
+                    <div id='output_hour_type_distribution2'></div>
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+        {% endblock %}
+
+        {% block mediaJS %}
+            {% if page %}
+                {% for jslib in js %}
+                    <script src="{{ jslib }}"></script>
+                 {% endfor %}
+
+                <script>
+                function date_hour_posts_pivot(page_id, graph_target, post_type){
+                    var sortAs =           $.pivotUtilities.sortAs;
+                    var data_url="/query/"+ page_id +"/?query_name=daily_date_hour_posts&post_type=" +post_type;
+                    $.getJSON(data_url, function(mps) {
+                         var utils = $.pivotUtilities;
+                            var heatmap =  utils.renderers["Heatmap"];
+                            var sum =  utils.aggregators["Sum"];
+                            $("#" + graph_target).pivot(mps, {
+                                rows: ["hour"],
+                                cols: ["name"],
+                                vals: ["count"],
+                                aggregator: sum(["count"]),
+                                renderer: heatmap,
+                                sorters: function(attr) {
+                                        if(attr == "name") {
+                                            return sortAs(["Monday","Tuesday","Wednesday", "Thursday","Friday",
+                                                "Saturday","Sunday"]);
+                                        }
+                                    }
+                            });
+                        });
+                }
+
+                var comparison = false;
+
+                function change_content_type(post_type){
+                    // output_date_hour_posts
+                    date_hour_posts_pivot('{{page_id}}', "output_date_hour_posts",post_type);
+                    if(comparison){
+                        // output_date_hour_posts2
+                        var page_id = $('#opt_page').val();
+                        date_hour_posts_pivot(page_id, "output_date_hour_posts2",post_type);
+                    }
+                }
+
+
+
+                function compareStats(){
+                    comparison=true;
+                    var page_id = $('#opt_page').val();
+                    date_hour_posts_pivot(page_id, "output_date_hour_posts2")
+                    // $("#compare_title").html('Weekly Calendar Stats ');
+                    plot_post_type_distribution(page_id, 'output_post_type_distribution2');
+                    plot_day_post_type_histogram(page_id, 'output_day_type_distribution2');
+                    plot_hour_type_distribution(page_id, 'output_hour_type_distribution2');
+                    fill_recorded_records(page_id,'output_days_posts_recorded2' )
+                    $('.compareTitle').show();
+
+                }
+
+                $(function(){
+                        var sortAs =           $.pivotUtilities.sortAs;
+                        date_hour_posts_pivot({{ page_id}}, "output_date_hour_posts");
+                     });
+
+
+                function plot_post_type_distribution(page_id, element){
+                    var data_url="/query/"+ page_id +"/?query_name=post_type_distribution";
+
+                    var layout = {
+                          height: 400,
+                          width: 500
+                        };
+
+                    $.getJSON(data_url, function(mps) {
+                        mps[0].type="pie";
+                        $('#' +  element ).html('');
+                        Plotly.newPlot(element, mps, layout);
+
+                    })
+                }
+
+                $(function(){
+                    plot_post_type_distribution('{{ page_id }}', 'output_post_type_distribution');
+
+                });
+
+
+                function plot_day_post_type_histogram(page_id,element){
+                    var data_url="/query/"+ page_id +"/?query_name=day_type_histogram";
+                    var layout = {barmode: "stack"};
+                    $.getJSON(data_url, function(hist_data) {
+                        $('#' +  element ).html('');
+                        Plotly.newPlot(element, hist_data, layout);
+
+                    })
+                }
+
+                $(function(){
+                    plot_day_post_type_histogram('{{ page_id }}', 'output_day_type_distribution');
+                });
+
+                function plot_hour_type_distribution(page_id, element){
+                    var data_url="/query/"+ page_id +"/?query_name=hour_type_histogram";
+                    var layout = {barmode: "stack"};
+                    $.getJSON(data_url, function(hist_data) {
+                        $('#' +  element ).html('');
+                        Plotly.newPlot(element, hist_data, layout);
+
+                    })
+                }
+                function fill_recorded_records(page_id, element){
+                    var data_url="/query/"+ page_id +"/?query_name=days_recorded";
+                    var layout = {barmode: "stack"};
+                    $.getJSON(data_url, function(hist_data) {
+                        $('#' +  element ).html('');
+                        mindate = hist_data[0].mindt;
+                        maxdate = hist_data[0].maxdt;
+                        posts = hist_data[0].posts;
+                        days = hist_data[0].days_recorded;
+                        strinfo="First Date: " + mindate + "</br>Last Date: "+ maxdate + "</br>Days: "+ days +"</br>Posts:"+ posts +"</br>";
+                        $('#' +  element ).html(strinfo);
+
+                    })
+                }
+
+                $(function(){
+                    fill_recorded_records('{{ page_id }}','output_days_posts_recorded' )
+                });
+                $(function(){
+                    plot_hour_type_distribution('{{ page_id }}', 'output_hour_type_distribution');
+                });
+
+
+                 // $("#output_date_hour_posts").pivotUI(mps, {
+                            //     rows: ["hour"],
+                            //     cols: ["name"],
+                            //     vals: ["count"],
+                            //     unusedAttrsVertical: true,
+                            //     aggregatorName: "Integer Sum",
+                            //     rendererName: "Heatmap",
+                            //     sorters: function(attr) {
+                            //             if(attr == "name") {
+                            //                 return sortAs(["Monday","Tuesday","Wednesday", "Thursday","Friday",
+                            //                     "Saturday","Sunday"]);
+                            //             }
+                            //         }
+
+                            // });
+                            // $("#output_date_hour_posts2").pivotUI(mps, {
+                            //     rows: ["hour"],
+                            //     cols: ["name"],
+                            //     vals: ["count"],
+                            //     unusedAttrsVertical: true,
+                            //     aggregatorName: "Integer Sum",
+                            //     rendererName: "Heatmap",
+                            //     sorters: function(attr) {
+                            //             if(attr == "name") {
+                            //                 return sortAs(["Monday","Tuesday","Wednesday", "Thursday","Friday",
+                            //                     "Saturday","Sunday"]);
+                            //             }
+                            //         }
+
+                            // });
+
+                </script>
+            {% endif %}
+        {% endblock %}
+
+
+

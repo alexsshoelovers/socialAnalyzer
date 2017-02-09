@@ -10,7 +10,7 @@ import os
 config = {
 
     # webapp2 sessions
-    'webapp2_extras.sessions': {'secret_key': '_PUT_KEY_HERE_YOUR_SECRET_KEY_'},
+    'webapp2_extras.sessions': {'secret_key': 'thisisnotajokeanymore2016'},
 
     # webapp2 authentication
     'webapp2_extras.auth': {'user_model': 'bp_includes.models.User',
@@ -21,7 +21,7 @@ config = {
                               'environment_args': {'extensions': ['jinja2.ext.i18n']}},
 
     # application name
-    'app_name': "GAE Boilerplate",
+    'app_name': "FBLive Counters",
 
     # the default language code for the application.
     # should match whatever language the site uses when i18n is disabled
@@ -36,12 +36,15 @@ config = {
     'locales': ['en_US', 'es_ES', 'it_IT', 'zh_CN', 'id_ID', 'fr_FR', 'de_DE', 'ru_RU', 'pt_BR', 'cs_CZ','vi_VN', 'nl_NL', 'ko_KR'],
 
     # contact page email settings
-    'contact_sender': "SENDER_EMAIL_HERE",
-    'contact_recipient': "RECIPIENT_EMAIL_HERE",
+    'contact_sender': "alex@shoelovers.co",
+    'contact_recipient': "alex@shoelovers.co",
 
     # Password AES Encryption Parameters
     # aes_key must be only 16 (*AES-128*), 24 (*AES-192*), or 32 (*AES-256*) bytes (characters) long.
-    'aes_key': "12_24_32_BYTES_KEY_FOR_PASSWORDS",
+    "12_24_32_BYTES_KEY_FOR_PASSWORDS"
+
+    # 'aes_key': "12_24_32_BYTES_KEY_FOR_PASSWORDS",
+    'aes_key': "alongkeyCanPreventHacking2341231",
     'salt': "_PUT_SALT_HERE_TO_SHA512_PASSWORDS_",
 
     # get your own consumer key and consumer secret by registering at https://dev.twitter.com/apps
