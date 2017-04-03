@@ -1,0 +1,39 @@
+{% extends base_layout %}
+{% block mediaCSS %}
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
+    <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/pivottable/2.3.0/pivot.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/pivottable/2.3.0/pivot.min.css">
+    <style type="text/css">
+           /* @media print { body { -webkit-print-color-adjust: exact; } }
+            .compareTitle { display: none; }*/
+    </style>
+    <style>
+    </style>
+{% endblock %}
+{% block localmediaCSS %}
+{% endblock %}
+{% block header_title %}Page Stats{% endblock %}
+{% block page_navbar %}
+<div class="subnav">
+<ul>
+<li {% if path == uri_for("page-stats-overview", page_id=page_id) %} class="active"{% endif %} ><a href="{{ uri_for("page-stats-overview", page_id=page_id) }}">Overview</a></li>
+<li {% if path == uri_for("page-stats-content", page_id=page_id) %} class="active"{% endif %} ><a href="{{ uri_for("page-stats-content", page_id=page_id) }}">Content </a></li>
+{% if page.page_token!='' and page.page_token!='undefined' %}
+    <li {% if path == uri_for("page-stats-clicks", page_id=page_id) %} class="active"{% endif %} ><a href="{{  uri_for("page-stats-clicks", page_id=page_id) }}">Clicks</a></li>
+    <li {% if path == uri_for("page-stats-reach-distribution", page_id=page_id) %} class="active"{% endif %} ><a href="{{  uri_for("page-stats-reach-distribution", page_id=page_id) }}">Reach Geo</a></li>
+{% endif %}
+<li {% if path == uri_for("page-stats-publishing", page_id=page_id) %} class="active"{% endif %} ><a href="{{  uri_for("page-stats-publishing", page_id=page_id) }}">Publishing Profile</a></li>
+<li {% if path == uri_for("available-posts", page_id=page_id) %} class="active"{% endif %} ><a href="{{  uri_for("available-posts", page_id=page_id) }}">Classify Posts</a></li>
+<li {% if path == uri_for("taxonomy", page_id=page_id) %} class="active"{% endif %} ><a href="{{  uri_for("taxonomy", page_id=page_id) }}">Setup Taxonomy</a></li>
+
+
+</ul>
+</div>
+{% endblock %}
+{% block content %}
+{% endblock %}
+{% block mediaJS %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'admin_base.html' %}
+
+{% block header_title %}
+  {% trans %}Facebook Access Token{% endtrans %}
+{% endblock %}
+
+{% block content %}
+{{ fb_access_token }}<br/>
+<div onclick="login();" class="btn btn-info">Get FB Access Token</div>
+<script>
+    function login(){
+        FB.login(function(response){
+            console.log(response);
+            var accessToken = response.authResponse.accessToken;
+            var user_id = response.authResponse.userID;
+            console.log(accessToken);
+
+            $.ajax({
+                    url: '{{ uri_for("extend_general_fb_user_token") }}',
+                    type: 'get',
+                    data: {'token': accessToken, 'user_id': user_id},
+                    dataType: 'text',
+                    success: function (data) {
+                        alert('Access Token stored');
+                    }
+                });
+        }, {scope:'user_likes, public_profile,manage_pages, read_insights, read_audience_network_insights, publish_pages'});
+
+    }
+</script>
+{% endblock %}

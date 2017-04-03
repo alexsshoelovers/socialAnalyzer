@@ -1,0 +1,149 @@
+{% extends "base_stats.html" %}
+{% block content %}
+<h1>{{ page.name }}</h1>
+<h2>Content</h2>
+<input  type="hidden" id="type_filter" value="all">
+<input  type="hidden" id="order_filter" value="total">
+<input  type="hidden" id="daterange_filter" value="week">
+<input  type="hidden" id="comparing_page_id" value="">
+
+<a href="#" id="type_filter_1"onclick="selectTypeFilter(1,'all');return false;" class="label label-as-badge label-default label-warning">All</a>
+<a href="#" id="type_filter_2"onclick="selectTypeFilter(2,'photo');return false;" class="label label-as-badge label-default ">Photos</a>
+<a href="#" id="type_filter_3"onclick="selectTypeFilter(3,'link');return false;" class="label label-as-badge label-default ">Links</a>
+<a href="#" id="type_filter_4"onclick="selectTypeFilter(4,'video');return false;" class="label label-as-badge label-default ">Videos</a>
+<a href="#" id="type_filter_5"onclick="selectTypeFilter(5,'with');return false;" class="label label-as-badge label-default ">With</a>
+<a href="#" id="type_filter_6"onclick="selectTypeFilter(6,'shared');return false;" class="label label-as-badge label-default ">Shared</a>
+<a href="#" id="type_filter_7"onclick="selectTypeFilter(7,'live');return false;" class="label label-as-badge label-default ">Live</a>
+<br/>
+<a href="#" id="order_filter_1" onclick="selectOrderFilter(1,'total');return false;" class="label label-as-badge label-default label-info">Total</a>
+<a href="#" id="order_filter_2" onclick="selectOrderFilter(2,'likes');return false;" class="label label-as-badge label-default ">Likes</a>
+<a href="#" id="order_filter_3" onclick="selectOrderFilter(3,'shares');return false;" class="label label-as-badge label-default ">Shares</a>
+<a href="#" id="order_filter_4" onclick="selectOrderFilter(4,'comments');return false;" class="label label-as-badge label-default ">Comments</a>
+<a href="#" id="order_filter_5" onclick="selectOrderFilter(5,'link_clicks');return false;" class="label label-as-badge label-default ">Clicks</a>
+<a href="#" id="order_filter_6" onclick="selectOrderFilter(6,'post_video_views');return false;" class="label label-as-badge label-default ">Views</a><br/>
+<a href="#" id="daterange_filter_1" onclick="selectDateRangeFilter(1,'week');return false;" class="label label-as-badge label-default label-success">Week</a>
+<a href="#" id="daterange_filter_2" onclick="selectDateRangeFilter(2,'month');return false;" class="label label-as-badge label-default ">Month</a>
+<a href="#" id="daterange_filter_3" onclick="selectDateRangeFilter(3,'twomonths');return false;" class="label label-as-badge label-default ">Two months</a>
+
+<div class="container" id="maincontainer">
+     <div class="row">
+        <div class="col-xs-6" hidden>
+            <h2>Compare with</h2>
+            <select id="opt_page">
+            {% for page in pages %}
+                <option value="{{ page.page_id }}"">{{ page.name }}</option>
+            {% endfor %}
+            </select>
+            <div class="btn btn-info btn-small small" onclick="compareStats(0);">Go</div>
+        </div>
+        <div class="col-xs-6">
+            <h2>Compare with</h2>
+            <select id="opt_page1">
+            {% for page in pages %}
+                <option value="{{ page.page_id }}"">{{ page.name }}</option>
+            {% endfor %}
+            </select>
+            <div class="btn btn-info btn-small small" onclick="compareStats(1);">Go</div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <div id='page_content'></div>
+        </div>
+        <div class="col-xs-6">
+            <div id='page_content1'></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block mediaJS %}
+<script>
+
+function return_fb_embed(page_id, post_id, story){
+    str_embed='<div class="panel panel-default"><div class="panel-heading">'+ story +'</div><div class="panel-body embed-responsive"><div class="fb-post" data-href="https://www.facebook.com/' + page_id + '/posts/' + post_id + '/"  style="width:300" data-width="300" data-show-text="true"><blockquote cite="https://www.facebook.com/yoamoloszapatos/videos/1946023868746905/" class="fb-xfbml-parse-ignore"></div></div></div>'
+    return str_embed
+
+}
+function fill_data(page_id, element_label){
+    $('#page_content' + element_label).empty();
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/content?action=get_data&dataset=posts&type_filter=' + $('#type_filter').val() +  '&order_filter=' + $('#order_filter').val() + '&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+                for(i=0;i<data.length;i++){
+                    post_id = data[i].post_id;
+                    page = post_id.split('_');
+                    console.log(post_id);
+                    $('#page_content' + element_label).append(return_fb_embed(page[0], page[1], data[i].story));
+                }
+                FB.XFBML.parse();
+
+            }
+        });
+}
+
+fill_data('{{ page_id }}','');
+
+
+function compareStats(which){
+
+    comparison=true;
+
+    if(which==1){
+        $('.initially_hidden').show();
+        var page_id = $('#opt_page1').val();
+        $('#comparing_page_id').val(page_id);
+        fill_data(page_id,'1');
+
+    }else{
+        fill_data('{{page_id}}','');
+    }
+
+
+}
+
+function selectTypeFilter(id, name){
+    for(i=1;i<=7;i++){
+        $('#type_filter_' + i).removeClass('label-warning');
+    }
+    $('#type_filter_' + id).addClass('label-warning');
+    $('#type_filter').val(name);
+    compareStats(0);
+    if($('#comparing_page_id').val()!=''){
+        compareStats(1);
+    }
+}
+
+function selectOrderFilter(id, name){
+    for(i=1;i<=6;i++){
+        $('#order_filter_' + i).removeClass('label-info');
+    }
+    $('#order_filter_' + id).addClass('label-info');
+    $('#order_filter').val(name);
+    compareStats(0);
+    if($('#comparing_page_id').val()!=''){
+        compareStats(1);
+    }
+}
+
+function selectDateRangeFilter(id, name){
+    for(i=1;i<=3;i++){
+        $('#daterange_filter_' + i).removeClass('label-success');
+    }
+    $('#daterange_filter_' + id).addClass('label-success');
+    $('#daterange_filter').val(name);
+    compareStats(0);
+    if($('#comparing_page_id').val()!=''){
+        compareStats(1);
+    }
+}
+
+</script>
+
+{% endblock %}
+
+
+

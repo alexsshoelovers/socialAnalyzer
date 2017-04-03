@@ -21,7 +21,17 @@ _routes = [
     RedirectRoute('/taxonomy/<page_id>/', handlers.TaxonomyHandler, name='taxonomy', strict_slash=True),
     RedirectRoute('/config_page/', handlers.ConfigPageHandler, name='config_page', strict_slash=True),
     RedirectRoute('/available_posts/<page_id>/', handlers.AvailablePostsHandler, name='available-posts', strict_slash=True),
-    RedirectRoute('/page_stats/<page_id>/', handlers.PageStatsHandler, name='page-stats', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/overview', handlers.PageStatsOverviewHandler, name='page-stats', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/overview', handlers.PageStatsOverviewHandler, name='page-stats-overview', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/fans', handlers.PageStatsFansHandler, name='page-stats-fans', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/content', handlers.PageStatsContentHandler, name='page-stats-content', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/engagement', handlers.PageStatsEngagementHandler, name='page-stats-engagement', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/publishing', handlers.PageStatsPublishingHandler, name='page-stats-publishing', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/lives', handlers.PageStatsLivesHandler, name='page-stats-lives', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/shares', handlers.PageStatsSharesHandler, name='page-stats-shares', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/with', handlers.PageStatsWithHandler, name='page-stats-with', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/clicks', handlers.PageStatsClicksHandler, name='page-stats-clicks', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/reach_geo', handlers.PageStatsReachGeoHandler, name='page-stats-reach-distribution', strict_slash=True),
     RedirectRoute('/schedule_live_video/<page_id>/', handlers.ScheduleLiveHandler, name='schedule-live', strict_slash=True),
     RedirectRoute('/realtime_counter/<post_id>/', handlers.RealTimeCounterHandler, name='realtime_counter', strict_slash=True),
     RedirectRoute('/general_config/', handlers.GeneralConfigHandler, name='general-config', strict_slash=True),
@@ -35,6 +45,9 @@ _routes = [
     RedirectRoute('/crontasks/fetch_new_posts_for_days/<number_of_days>/', handlers.fetchNewPostsDaysHandler, name='fetch-new-posts-days', strict_slash=True),
     RedirectRoute('/taskqueue_download_page_fetch_page_fans/', handlers.taskGetPageFansInDate, name='get_page_fans', strict_slash=True),
     RedirectRoute('/taskqueue_download_page_last_page_fans/', handlers.taskGetLastPageFans, name='get_last_page_fans', strict_slash=True),
+    RedirectRoute('/taskqueue_daily_download_page_fans/', handlers.taskGetDailyLastPageFans, name='get_daily_page_fans', strict_slash=True),
+    RedirectRoute('/taskqueue_get_public_page_fans/', handlers.taskGetPublicPageFans, name='get_public_page_fans', strict_slash=True),
+    RedirectRoute('/extendGeneralFbUserToken/', handlers.ExtendGeneralFbUserTokenRequestHandler, name='extend_general_fb_user_token', strict_slash=True),
 
 ]
 

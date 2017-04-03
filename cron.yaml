@@ -11,6 +11,12 @@ cron:
   url: /crontasks/fetch_new_posts_for_days/1/
   schedule: every 30 minutes
 
+- description: update pages last posts info
+  url: /taskqueue_daily_download_page_fans/
+  schedule: every day 01:00
+
+
+
 # - description: get last months fans
 #   url: /taskqueue_download_page_last_page_fans/
 #   schedule: 2 of month 09:00

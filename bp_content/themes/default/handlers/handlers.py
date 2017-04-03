@@ -35,6 +35,9 @@ import os
 from google.appengine.api import taskqueue
 from datetime import datetime
 from datetime import timedelta
+from bp_includes.lib import facebook
+import time
+import itertools
 
 SQLIP = '146.148.107.179'
 SQLINSTANCE_NAME='socialanalyzer-157404:us-central1:abejita'
@@ -47,6 +50,50 @@ class PagesConfigHandler(BaseHandler):
         params = {}
         params['page_id'] = page_id
         self.render_template("page_config.html", **params)
+
+
+
+class taskGetPublicPageFans(BaseHandler):
+    def post(self):
+        page_id = self.request.get('page_id')
+        app_id = self.app.config.get('fb_api_key')
+        app_secret = self.app.config.get('fb_secret')
+        app_access_token = getGeneralFBAccessToken()
+        # app_access_token = facebook.get_app_access_token(app_id, app_secret)
+        page_likes=getFBFans(page_id)
+        now_date = datetime.now()
+        int_day  = now_date.day
+        int_month = now_date.month
+        int_year =  now_date.year
+        sqlstr1 = "delete from fbpage_fans where page_id='%s' and date='%s-%02d-%02d' and country='%s';" % (page_id, int_year,int_month,int_day,'total')
+        sqlstr2 = "insert into fbpage_fans(page_id,date,fans,country) values ('%s','%s-%02d-%02d',%s,'%s')" % (  page_id, int_year,int_month,int_day, int(page_likes), 'total')
+        sqlupdatetaskurl = self.uri_for('update-mysql-handler')
+        database='abejita'
+        taskqueue.add(queue_name='db-update',url=sqlupdatetaskurl, params={
+                    'sql_string':[sqlstr1,sqlstr2],
+                    'database': database,
+                    # '_csrf_token': self.csrf_token()
+                })
+            # except:
+            #     pass
+
+
+class taskGetDailyLastPageFans(BaseHandler):
+    def get(self):
+        pages = localmodels.Page.query()
+        processed_pages_set = set()
+        for page in pages:
+            taskurl = self.uri_for('get_public_page_fans')
+            user  =page.user
+            user_id = str(user.id())
+            page_id = page.page_id
+            logging.info("User: %s , Page_id: %s" % ( user_id, page_id ) )
+            if page_id  not in processed_pages_set:
+                taskqueue.add(url=taskurl, params={
+                  'page_id': page_id
+                  })
+                processed_pages_set.add(page_id)
+
 
 class taskGetLastPageFans(BaseHandler):
     def get(self):
@@ -74,6 +121,26 @@ class taskGetLastPageFans(BaseHandler):
                 processed_pages_set.add(page_id)
 
 
+def getFBFans(page_id):
+    # first try to get page fans with access token (if there is a personal access token, then do it with that, else, and if there is a page token, use that, else, use the general fb access_token... )
+    # the logic says... if the page has a token use that, if the page owner has a token use that else.... use the general token
+    # second try to get the public fan count
+    # third try to get the public page_fans_country .... and sum all countries... might not work for every page (the count will not sum )
+
+    app_access_token = getGeneralFBAccessToken()
+    url = 'https://graph.facebook.com/%s/?fields=fan_count&access_token=%s' % (page_id, app_access_token)
+    logging.info(url)
+    r = urlfetch.fetch(url)
+    logging.info(r.content)
+    fancount=0
+    try:
+        if r.status_code==200:
+            j = json.loads(r.content)
+            fancount = j.get('fan_count',0)
+            logging.info('fan_count_success: %s' % fancount)
+    except:
+        logging.info('fan_count_error')
+    return fancount
 
 class taskGetPageFansInDate(BaseHandler):
     def get(self):
@@ -162,11 +229,12 @@ class fetchNewPostsDaysHandler(BaseHandler):
     def get(self, number_of_days):
         number_of_days_validated =0
         try:
-            number_of_days_validated = int(s, 10)
+            number_of_days_validated = int(number_of_days, 10)
         except:
             pass
 
-        pages = localmodels.Page.query(localmodels.Page.frequent_post_insight_update==True)
+        # pages = localmodels.Page.query(localmodels.Page.frequent_post_insight_update==True)
+        pages = localmodels.Page.query()
         processed_pages_set = set()
         for page in pages:
             taskurl = self.uri_for('task-download-page-handler')
@@ -258,7 +326,7 @@ class jsonQuery(BaseHandler):
                 tmpdict[str_weekday_hour] = single_result
             new_arr = []
             for i in range(0,len(days_names)):
-                for j in range(0,23):
+                for j in range(0,24):
                     strindex = "%s_%s" % (i,j)
                     empty_dict = {'comments': 0 ,'weekday': i, 'likes':0,'shares':0,'post_impressions':0,'count':0, 'post_video_views':0, 'hour':j}
                     tmpval = tmpdict.get(strindex,empty_dict)
@@ -384,8 +452,601 @@ class jsonQuery(BaseHandler):
         self.response.headers['Content-Type'] = 'application/json'
         self.response.out.write(json.dumps(result, cls=DateTimeEncoder ))
 
+def getGeneralFBAccessToken():
+    db_access_token = localmodels.FBAccess_Token.get_or_insert('root_access_token')
+    return db_access_token.fb_access_token
 
-class PageStatsHandler(BaseHandler):
+
+class PageStatsClicksHandler(BaseHandler):
+
+    @user_required
+    def get(self, page_id):
+        params ={}
+        action = self.request.get('action','')
+        user = ndb.Key('User', int(self.user_id)).get()
+        if user.isadmin:
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+            pages = localmodels.Page.query().order(localmodels.Page.name).fetch()
+        else:
+            page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
+            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).order(localmodels.Page.name).fetch()
+
+        params['pages']=pages
+        params['page']=page
+        params['page_id'] = page_id
+        if action=='get_data':
+            dataset = self.request.get('dataset')
+            period = self.request.get('daterange_filter','twomonths')
+            days = 62
+            if period=='twomonths':
+                days=62
+            elif period=='month':
+                days=31
+            else:
+                days=7
+            range_date = datetime.today()-timedelta(days=days+1)
+            range_year = "%02d" % range_date.year
+            range_month = "%02d" % range_date.month
+            range_day = "%02d" % range_date.day
+            variables={'timezone':user.report_timezone, 'page_id':page_id,'year': range_year, 'month': range_month, 'day': range_day}
+            if dataset =='clicks':
+                str_sql="select  left( DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d'),10) as date, sum(link_clicks)as clicks from fbposts_batch where  page_id='{page_id}' and  DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')> '{year}-{month}-{day}' group by left( DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d'),10) order by 1 desc".format(**variables)
+                logging.info (str_sql)
+                clicks_cursor= returnCursor(str_sql ,'abejita')
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(clicks_cursor, cls=DateTimeEncoder))
+            if dataset=='today_clicks':
+                range_date = datetime.today()+timedelta(hours=(user.report_timezone))
+                range_date_now = datetime.today()+timedelta(hours=(user.report_timezone ))
+                logging.info(user.report_timezone)
+                logging.info(range_date)
+
+                range_year = "%02d" % range_date.year
+                range_month = "%02d" % range_date.month
+                range_day = "%02d" % range_date.day
+                range_hour="%02d" % range_date.hour
+                range_minute="%02d" % range_date.minute
+                range_second= "%02d" % range_date.second
+                variables={'timezone':user.report_timezone, 'page_id':page_id,'year': range_year, 'month': range_month, 'day': range_day}
+                str_sql="select   DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%dT%H:%i:%s') as created_time,  link_clicks as clicks from fbposts_batch where  page_id='{page_id}' and  DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')>= '{year}-{month}-{day}'  order by 1 desc".format(**variables)
+                logging.info(str_sql)
+                clicks_cursor= returnCursor(str_sql ,'abejita')
+
+                total_time =range_date_now.hour * 3600 + range_date_now.minute * 60 + range_date_now.second
+                logging.info(range_date_now)
+                logging.info(total_time)
+                set_post_created_times = set()
+                set_post_created_times_labels = set()
+                set_post_created_times.add(total_time)
+                set_post_created_times_labels.add("%02d:%02d:%02d" % (range_date_now.hour, range_date_now.minute, range_date_now.second ))
+                if page.page_token!='' and page.page_token!='undefined':
+                    fb_clicks = self.getFBGraphApiClicks(page_id, page.page_token)
+                    if fb_clicks>0:
+                        total_db_clicks = 0
+                        for posts in clicks_cursor:
+                            total_db_clicks= total_db_clicks + posts.get('clicks')
+                        if fb_clicks-total_db_clicks>0:
+                            clicks_cursor=list(clicks_cursor)
+                            clicks_cursor.append({
+                                                 'created_time':'0000-00-00T00:00:00',
+                                                 'clicks': fb_clicks-total_db_clicks
+                                                 })
+
+                # logging.info(clicks_cursor)
+                for post in clicks_cursor:
+                    post_created_time = post.get('created_time').split('T')[1].split(':')
+                    post_total_time = int(post_created_time[0])*3600 + int(post_created_time[1])*60 + int(post_created_time[1])
+                    set_post_created_times.add(post_total_time)
+                    set_post_created_times_labels.add(post.get('created_time').split('T')[1])
+                    diff = total_time - post_total_time
+                    post['diff'] = total_time - post_total_time
+                    post['total_time'] = post_total_time
+                    if diff>0:
+                        clicks_per_time_unit = (float(post.get('clicks'))*1.0)/(float(diff)*1.0)
+                    else:
+                        clicks_per_time_unit =post.get('clicks')
+                    post['clicks_per_time_unit']  = clicks_per_time_unit
+                    # logging.info(post_total_time)
+                logging.info(clicks_cursor)
+                lst_post_created_times = list(set_post_created_times)
+                lst_post_created_times_lables = list(set_post_created_times_labels)
+                lst_post_created_times_lables.sort(reverse=False)
+                lst_post_created_times.sort(reverse=False)
+                last_time = 0
+                lst_clicks_till_time = []
+                for time in lst_post_created_times:
+                    clicks_till_time=0
+                    for post in clicks_cursor:
+                        logging.info("total_time:%s  time:%s" % (post['total_time'] , time))
+                        diff = time-post['total_time']
+                        if diff>0 :
+                            clicks_till_time =clicks_till_time + ( diff * post['clicks_per_time_unit'])
+                        else:
+                            logging.info('diff=0')
+                    lst_clicks_till_time.append(clicks_till_time)
+                    last_time = time
+                data = [{
+                                    'y': lst_clicks_till_time,
+                                    'x': lst_post_created_times_lables,
+                                    'type': 'line',
+                                    'line': {'shape': 'spline'}
+                                  }]
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(data, cls=DateTimeEncoder))
+        else:
+            self.render_template('stats_clicks.html',**params)
+
+    def getFBGraphApiClicks(self,page_id,access_token):
+        str_url = 'https://graph.facebook.com/v2.8/%s/insights?metric=page_consumptions_by_consumption_type&period=day&access_token=%s' % (page_id, access_token)
+        rj={}
+        count=0
+        while True:
+            count=count+1
+            if count>20:
+                break
+            logging.info(str_url)
+            r=urlfetch.fetch(str_url)
+            if r.status_code==200:
+                rj=json.loads(r.content)
+                next_url = rj.get('paging',{}).get('next','')
+                if next_url=='':
+                    break
+                str_url=next_url
+        logging.info(rj)
+        value =rj.get('data',[{}])[0].get('values',[{}])[-1].get('value',{}).get('link clicks',0)
+        logging.info('value: %s' % value)
+        return value
+
+class PageStatsReachGeoHandler(BaseHandler):
+    @user_required
+    def get(self, page_id):
+        params ={}
+        action = self.request.get('action','')
+        user = ndb.Key('User', int(self.user_id)).get()
+        if user.isadmin:
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+            pages = localmodels.Page.query().order(localmodels.Page.name).fetch()
+
+        else:
+            page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
+            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).order(localmodels.Page.name).fetch()
+
+        params['pages']=pages
+        params['page']=page
+        params['page_id'] = page.page_id
+        if action=='get_data':
+            dataset = self.request.get('dataset')
+            if dataset=='page_reach_geo':
+                access_token  =page.page_token
+                countries_arr = []
+                countries_arr.append(['Country','Fans'])
+                str_url = 'https://graph.facebook.com/v2.8/%s/insights/page_impressions_by_country_unique/days_28?access_token=%s' % (page_id, page.page_token)
+                logging.info(str_url)
+                r = urlfetch.fetch(str_url)
+                countries_data = json.loads(r.content).get('data',[])
+                if len(countries_data)>0:
+                    countries_values = countries_data[0].get('values',[])
+                    if len(countries_values)>0:
+                        final_values = countries_values[0].get('value')
+                        # logging.info(final_values)
+                        for key,val in final_values.iteritems():
+                            countries_arr.append([key,val])
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(countries_arr, cls=DateTimeEncoder))
+        else:
+            self.render_template('stats_reach_geo.html',**params)
+
+
+
+class PageStatsOverviewHandler(BaseHandler):
+    @user_required
+    def get(self,page_id):
+        params ={}
+        action = self.request.get('action','')
+        user = ndb.Key('User', int(self.user_id)).get()
+        if user.isadmin:
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+            pages = localmodels.Page.query().order(localmodels.Page.name).fetch()
+
+        else:
+            page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
+            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).order(localmodels.Page.name).fetch()
+
+        params['pages']=pages
+        params['page']=page
+        params['page_id'] = page.page_id
+        if action=='get_data':
+            dataset = self.request.get('dataset')
+            period = self.request.get('daterange_filter','twomonths')
+            days = 62
+            if period=='twomonths':
+                days=62
+            elif period=='month':
+                days=31
+            else:
+                days=7
+            range_date = datetime.today()-timedelta(days=days+1)
+            range_year = "%02d" % range_date.year
+            range_month = "%02d" % range_date.month
+            range_day = "%02d" % range_date.day
+            variables={'timezone':user.report_timezone, 'page_id':page_id,'year': range_year, 'month': range_month, 'day': range_day}
+            if dataset =='page_fans':
+                str_sql="select page_id, DATE_FORMAT(DATE_ADD(STR_TO_DATE(date, '%Y-%m-%d'), INTERVAL {timezone} HOUR), '%Y-%m-%d') as date, fans, country   from fbpage_fans where page_id='{page_id}' and country='total' and  date> '{year}-{month}-{day}' order by date asc ".format(**variables)
+                page_fans= returnCursor(str_sql ,'abejita')
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(page_fans, cls=DateTimeEncoder))
+                logging.info (str_sql)
+            elif dataset =='page_countries':
+                access_token  =getGeneralFBAccessToken()
+                countries_arr = []
+                countries_arr.append(['Country','Fans'])
+                url_countries = 'https://graph.facebook.com/v2.8/%s/insights/page_fans_country/lifetime?access_token=%s'  % (page.page_id, access_token)
+                logging.info(url_countries)
+                r = urlfetch.fetch(url_countries)
+                countries_data = json.loads(r.content).get('data',[])
+                if len(countries_data)>0:
+                    countries_values = countries_data[0].get('values',[])
+                    if len(countries_values)>0:
+                        final_values = countries_values[0].get('value')
+                        # logging.info(final_values)
+                        for key,val in final_values.iteritems():
+                            countries_arr.append([key,val])
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(countries_arr, cls=DateTimeEncoder))
+            elif dataset=='page_engagement_distribution':
+                str_sql="select  sum(likes)as likes, sum(shares)as shares, sum(comments) as comments from fbposts_batch where  page_id='{page_id}' and  DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')> '{year}-{month}-{day}'".format(**variables)
+                page_engagement_distribution = returnCursor(str_sql,'abejita')[0]
+                logging.info(str_sql)
+                labels=['likes','shares','comments']
+                values = [page_engagement_distribution.get('likes'),page_engagement_distribution.get('shares'),page_engagement_distribution.get('comments') ]
+                data = [{
+                            'values': values,
+                            'labels': labels,
+                            'type': 'pie',
+                            'hole': 0.4
+                          }]
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(data, cls=DateTimeEncoder))
+            elif dataset=='most_engaged_post_type':
+                str_sql = "select fans from fbpage_fans where page_id='%s' and country='total' order by date desc limit 1" % page.page_id
+                fans = returnCursor(str_sql, 'abejita')
+                logging.info(fans)
+                total_fans=0
+                if len(fans)>0:
+                    total_fans = fans[0].get('fans',0)
+                else:
+                    total_fans = 1
+
+                if int(total_fans)==0:
+                    total_fans=1
+                logging.info('total_fans: %s' % total_fans)
+                str_sql = "select  post_type, (sum(likes)+ sum(shares)+ sum(comments))/count(*) as interactions from fbposts_batch where  page_id='{page_id}' and  DATE_FORMAT(DATE_ADD( STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)  ,'%Y-%m-%d')> '{year}-{month}-{day}'  group by post_type order by (sum(likes)+ sum(shares)+ sum(comments) )/count(*) desc".format(**variables)
+                post_engagement_by_post_type = returnCursor(str_sql,'abejita')
+                labels = []
+                values = []
+                for row in post_engagement_by_post_type:
+                    labels.append(row.get('post_type'))
+                    values.append(float(row.get('interactions'))/(float(total_fans)/1000.0))
+                data = [{
+                                    'y': values,
+                                    'x': labels,
+                                    'type': 'bar'
+                                  }]
+
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(data, cls=DateTimeEncoder))
+            elif dataset=='post_type_distribution':
+                str_sql = "select post_type, count(*) as count  from fbposts_batch where page_id='{page_id}' and  DATE_FORMAT(DATE_ADD( STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)    ,'%Y-%m-%d')> '{year}-{month}-{day}' group by post_type order by post_type asc".format(**variables)
+                post_types = returnCursor(str_sql, 'abejita')
+                values =[]
+                labels=[]
+                for row in post_types:
+                    labels.append(row.get('post_type'))
+                    values.append(row.get('count'))
+                data = [{
+                                    'values': values,
+                                    'labels': labels,
+                                    'type': 'pie',
+                                    'hole': 0.4
+                                  }]
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(data, cls=DateTimeEncoder))
+            elif dataset=='page_engagement_daily':
+                str_sql = "select fans from fbpage_fans where page_id='%s' and country='total' order by date desc limit 1" % page.page_id
+                fans = returnCursor(str_sql, 'abejita')
+                total_fans=0
+                if len(fans)>0:
+                    total_fans = fans[0].get('fans')
+                else:
+                    total_fans = 1
+                if int(total_fans)==0:
+                    total_fans=1
+                str_sql="select  DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d') as date, post_type,  sum(likes)as likes, sum(shares)as shares, sum(comments) as comments, sum(likes)+ sum(shares) + sum(comments)  as total from fbposts_batch where  page_id='{page_id}'  and  DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)  ,'%Y-%m-%d')> '{year}-{month}-{day}' group by DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d'), post_type".format(**variables)
+                logging.info(str_sql)
+                page_engagement = returnCursor(str_sql, 'abejita')
+                dates_arr = []
+                photo_arr = []
+                link_arr= []
+                total_arr=[]
+                video_arr = []
+                total_arr_per_1000=[]
+                date_str = ''
+                added_photo=False
+                added_video=False
+                added_link = False
+                is_first_time=True
+                for row in page_engagement:
+                    if row.get('date') != date_str:
+                        date_str=row.get('date')
+                        if not is_first_time:
+                            if not added_photo:
+                                photo_arr.append(0)
+                            if not added_video:
+                                video_arr.append(0)
+                            if not added_link:
+                                link_arr.append(0)
+                            added_photo=False
+                            added_video=False
+                            added_link = False
+                            dates_arr.append(row.get('date'))
+                        else:
+                            is_first_time=False
+                    if row.get('post_type','')=='photo':
+                        photo_arr.append(row.get('total'))
+                        added_photo=True
+                    elif row.get('post_type','')=='link':
+                        link_arr.append(row.get('total'))
+                        added_link=True
+                    elif row.get('post_type','')=='video':
+                        video_arr.append(row.get('total'))
+                        added_video=True
+                    else:
+                        pass
+
+                for i in range(0,len(dates_arr)-1):
+                    total_arr.append(photo_arr[i] + video_arr[i] + link_arr[i])
+                    total_arr_per_1000.append(float(photo_arr[i] + video_arr[i] + link_arr[i])/(float(total_fans)/1000.0))
+                post_type_data = [
+                                    { 'x': dates_arr, 'y':photo_arr, 'type':'bar', 'name':'photo'},
+                                    { 'x':dates_arr, 'y':link_arr, 'type':'bar', 'name':'link'},
+                                    { 'x':dates_arr, 'y':video_arr,'type':'bar', 'name':'video'},
+                                    { 'x':dates_arr, 'y':total_arr_per_1000,'type':'scatter', 'name':'x1000fans', 'yaxis': 'y2',},
+                                    # { 'x':dates_arr, 'y':total_arr,'type':'scatter', 'name':'total'}
+                                    ]
+
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(post_type_data, cls=DateTimeEncoder))
+            elif dataset=='page_reach_by_type':
+                str_sql = "select fans from fbpage_fans where page_id='%s' and country='total' order by date desc limit 1" % page.page_id
+                fans = returnCursor(str_sql, 'abejita')
+                total_fans=0
+                if len(fans)>0:
+                    total_fans = fans[0].get('fans')
+                else:
+                    total_fans = 1
+                if int(total_fans)==0:
+                    total_fans=1
+                str_sql="select DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d') as date, post_type,  sum(post_impressions)/count(*)  as reach from fbposts_batch where  page_id='{page_id}'and  DATE_FORMAT(DATE_ADD( STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')> '{year}-{month}-{day}' group by DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d'), post_type".format(**variables)
+                page_engagement = returnCursor(str_sql, 'abejita')
+                dates_arr = []
+                photo_arr = []
+                link_arr= []
+                total_arr=[]
+                video_arr = []
+                total_arr_per_1000=[]
+                date_str = ''
+                added_photo=False
+                added_video=False
+                added_link = False
+                is_first_time=True
+                for row in page_engagement:
+                    if row.get('date') != date_str:
+                        date_str=row.get('date')
+                        if not is_first_time:
+                            if not added_photo:
+                                photo_arr.append(0)
+                            if not added_video:
+                                video_arr.append(0)
+                            if not added_link:
+                                link_arr.append(0)
+                            added_photo=False
+                            added_video=False
+                            added_link = False
+                            dates_arr.append(row.get('date'))
+                        else:
+                            is_first_time=False
+                    if row.get('post_type','')=='photo':
+                        photo_arr.append(row.get('reach'))
+                        added_photo=True
+                    elif row.get('post_type','')=='link':
+                        link_arr.append(row.get('reach'))
+                        added_link=True
+                    elif row.get('post_type','')=='video':
+                        video_arr.append(row.get('reach'))
+                        added_video=True
+                    else:
+                        pass
+
+                for i in range(0,len(dates_arr)-1):
+                    total_arr.append(photo_arr[i] + video_arr[i] + link_arr[i])
+                    total_arr_per_1000.append(float(photo_arr[i] + video_arr[i] + link_arr[i])/(float(total_fans)/1000.0))
+                post_type_data = [
+                                    { 'x': dates_arr, 'y':photo_arr, 'type':'bar', 'name':'photo'},
+                                    { 'x':dates_arr, 'y':link_arr, 'type':'bar', 'name':'link'},
+                                    { 'x':dates_arr, 'y':video_arr,'type':'bar', 'name':'video'},
+                                    { 'x':dates_arr, 'y':total_arr_per_1000,'type':'scatter', 'name':'x1000fans', 'yaxis': 'y2',},
+                                    # { 'x':dates_arr, 'y':total_arr,'type':'scatter', 'name':'total'}
+                                    ]
+
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(post_type_data, cls=DateTimeEncoder))
+            elif dataset=='post_type_count':
+                # variables={'timezone':user.report_timezone, 'page_id':421584877978888,'year': range_year, 'month': range_month, 'day': range_day}
+                str_sql = "select DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d') as date, post_type, count(*) as count  from fbposts_batch where page_id='{page_id}' and  DATE_FORMAT(DATE_ADD( STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)  ,'%Y-%m-%d')> '{year}-{month}-{day}' group by post_type, DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d') order by DATE_FORMAT(DATE_ADD(STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR), '%Y-%m-%d') asc, post_type asc".format(**variables)
+                logging.info(str_sql)
+                posts_types = returnCursor(str_sql, 'abejita')
+                dates_arr = []
+                photo_dict={}
+                link_dict={}
+                video_dict={}
+
+                dates_arr = []
+                photo_arr = []
+                link_arr= []
+                total_arr=[]
+                video_arr = []
+                date_str = ''
+
+                for row in posts_types:
+                    if row.get('date') in dates_arr:
+                        pass
+                    else:
+                        dates_arr.append(row.get('date'))
+
+                    if row.get('post_type','')=='photo':
+                        photo_dict[row.get('date')]=row.get('count')
+                    elif row.get('post_type','')=='link':
+                        link_dict[row.get('date')]=row.get('count')
+                    elif row.get('post_type','')=='video':
+                        video_dict[row.get('date')]=row.get('count')
+                    else:
+                        pass
+
+                for date in dates_arr:
+                    total_arr.append(photo_dict.get(date,0) + link_dict.get(date,0) + video_dict.get(date,0))
+                    if photo_dict.get(date):
+                        photo_arr.append(photo_dict.get(date))
+                    else:
+                        photo_arr.append(0)
+                    if link_dict.get(date):
+                        link_arr.append(link_dict.get(date))
+                    else:
+                        link_arr.append(0)
+                    if video_dict.get(date):
+                        video_arr.append(video_dict.get(date))
+                    else:
+                        video_arr.append(0)
+
+                post_type_data = [
+                                    { 'x': dates_arr, 'y':photo_arr, 'type':'scatter', 'name':'photo'},
+                                    { 'x':dates_arr, 'y':link_arr, 'type':'scatter', 'name':'link'},
+                                    { 'x':dates_arr, 'y':video_arr,'type':'scatter', 'name':'video'},
+                                    { 'x':dates_arr, 'y':total_arr,'type':'scatter', 'name':'total'}
+                                    ]
+
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(post_type_data, cls=DateTimeEncoder))
+            else:
+                pass
+        else:
+            self.render_template('stats_overview.html',**params)
+
+
+    def post(self):
+        pass
+
+class PageStatsFansHandler(BaseHandler):
+    def get(self,page_id):
+        pass
+
+    def post(self):
+        pass
+
+
+class PageStatsContentHandler(BaseHandler):
+    @user_required
+    def get(self,page_id):
+        params ={}
+        action = self.request.get('action','')
+        user = ndb.Key('User', int(self.user_id)).get()
+        if user.isadmin:
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+            pages = localmodels.Page.query().order(localmodels.Page.name).fetch()
+            # logging.info(page)
+        else:
+            page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
+            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).order(localmodels.Page.name).fetch()
+            # logging.info(page)
+
+        params['pages']=pages
+        params['page_id'] = page.page_id
+        params['page'] = page
+        dataset = self.request.get('dataset')
+        logging.info(action)
+        logging.info(dataset)
+        if action=='get_data':
+            period = self.request.get('period','week')
+            if dataset =='page_content':
+                str_sql="select *   from fbpage_fans where page_id='%s' and country='total'  order by date asc " % page.page_id
+                page_fans= returnCursor(str_sql ,'abejita')
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(page_fans, cls=DateTimeEncoder))
+                logging.info (str_sql)
+            elif dataset=='posts':
+                sql_where= self.request.get('type_filter','all')
+                sql_order= self.request.get('order_filter','total')
+                sql_dates= self.request.get('daterange_filter','week')
+                where_str=[]
+                where_str.append(" page_id='%s' " % page_id )
+                order_sql=""
+                order_str=[]
+                if sql_order=='total':
+                    order_str.append(' likes + shares + comments desc ')
+                elif sql_order!='':
+                    order_str.append(' %s desc ' % sql_order)
+
+                if len(order_str)>0:
+                    order_sql =' order by %s ' %  ' and '.join(order_str)
+
+                if sql_where =='all':
+                    pass
+                elif sql_where in ['with','shared','live']:
+                    where_str.append(" story like '%% %s %%'" % sql_where)
+                elif sql_where in ['photo', 'link', 'video']:
+                    where_str.append(" post_type =  '%s'" % sql_where)
+                concat_where = ' and '.join(where_str)
+                str_sql = "select post_id, message, story, likes, shares, comments, likes+ shares + comments as total, post_impressions, link_clicks, post_video_views, link from fbposts_batch where  %s  %s limit 15" % (concat_where , order_sql)
+                logging.info (str_sql)
+                posts = returnCursor(str_sql, 'abejita')
+                self.response.headers['Content-Type'] = 'application/json'
+                self.response.out.write(json.dumps(posts, cls=DateTimeEncoder))
+        else:
+            self.render_template('stats_content.html',**params)
+
+    def post(self):
+        pass
+
+class PageStatsEngagementHandler(BaseHandler):
+    def get(self,page_id):
+        pass
+
+    def post(self):
+        pass
+
+class PageStatsLivesHandler(BaseHandler):
+    def get(self,page_id):
+        pass
+
+    def post(self):
+        pass
+
+
+class PageStatsSharesHandler(BaseHandler):
+    def get(self,page_id):
+        pass
+
+    def post(self):
+        pass
+
+class PageStatsWithHandler(BaseHandler):
+    def get(self,page_id):
+        pass
+
+    def post(self):
+        pass
+
+
+class PageStatsPublishingHandler(BaseHandler):
     @user_required
     def get(self, page_id):
         params={}
@@ -406,10 +1067,10 @@ class PageStatsHandler(BaseHandler):
         user = ndb.Key('User',int(self.user_id)).get()
         if user.isadmin:
             page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
-            pages = localmodels.Page.query().fetch()
+            pages = localmodels.Page.query().order(localmodels.Page.name).fetch()
         else:
             page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
-            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).fetch()
+            pages = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',self.user_id), ancestor=ndb.Key('User',self.user_id)).order(localmodels.Page.name).fetch()
 
         access_token = ''
         if page.page_token!='undefined':
@@ -417,18 +1078,9 @@ class PageStatsHandler(BaseHandler):
         else:
             access_token = user.fb_access_token
 
-        page_likes_url = "https://graph.facebook.com/%s/?fields=likes&access_token=%s" % (page_id, access_token)
-        r = urlfetch.fetch(page_likes_url)
-        page_likes = 0
-        logging.info(r.content)
-        if r.status_code==200:
-            try:
-                rj = json.loads(r.content)
-                logging.info(rj)
-                page_likes = rj.get('likes','Unknown')
 
-            except:
-                pass
+        page_likes = getFBFans(page_id)
+
         logging.info(page)
         logging.info(pages)
         params['page']=page
@@ -524,38 +1176,48 @@ class task_downloadPageHandler(BaseHandler):
         strnext = self.request.get('next_url','')
         days = self.request.get('days','0')
         intdays = int(days)
+        using_page_token = False
         if strnext!="":
             edge_query=strnext
         else:
+            # we need to check that at least we try to use a page that has an access token
+            # we need to define a way to get user to provide page access token when available
+
             page = localmodels.Page.query(localmodels.Page.user==ndb.Key('User',user_id), localmodels.Page.page_id==page_id).get()
             user  =ndb.Key('User',int(user_id)).get()
             access_token = ''
             shared_fields=["story","attachments","permalink_url","comments.limit(0).summary(true)","shares","likes.limit(0).summary(true)","link","message","from","created_time","object_id", "picture","type"]
             auth_fields=["insights.metric(post_consumptions_by_type,post_impressions,post_video_views)"]
-            # logging.info('page_token: %s' % page)
+            logging.info('page_token: %s' % page)
             if  page.page_token!='undefined':
+                using_page_token  = True
                 access_token=page.page_token
                 fields = ','.join(shared_fields+auth_fields)
             else:
                 access_token=user.fb_access_token
                 fields=','.join(shared_fields)
 
+
+
             base_url="https://graph.facebook.com/v2.8"
             edge_query="%s/%s/posts?fields=%s&access_token=%s" % ( base_url, page_id ,fields,access_token)
         logging.info(edge_query)
         r=urlfetch.fetch(edge_query)
-        # logging.info(r.content)
+        logging.info(r.content)
         data_posts=json.loads( r.content).get('data',[])
         paging_posts=json.loads(r.content).get('paging',{})
         strnext =paging_posts.get('next','')
         datediff = 0
+        now_date = datetime.now()
+        epoch = now_date.strftime('%s')
+
         for post in data_posts:
             strtime = post.get('created_time').split('+')[0]
             umt_created_time =datetime.strptime(  strtime, "%Y-%m-%dT%H:%M:%S" )
             weekday =  umt_created_time.strftime("%A")
             post['weekday']=weekday
             datediff = abs((datetime.now() - umt_created_time).days)
-            # logging.info('datediff: %s' % datediff)
+            logging.info('datediff: %s' % datediff)
             # logging.info('created_time: %s' % strtime)
             csv_headr,csv_data = self.graphapi_2_csv(post, page_id)
             # logging.info(csv_headr)
@@ -563,12 +1225,24 @@ class task_downloadPageHandler(BaseHandler):
             insert_values = ','.join(['"%s"' % value for value in csv_data ])
             str_delete = "delete from fbposts_batch where post_id='%s'" % post.get('id')
             str_insert = "insert into fbposts_batch(%s) values(%s)" % (insert_fields, insert_values)
+
+            filtered_fields = []
+            filtered_values = []
+            int_index = 0
+            for field in csv_headr:
+                if field in ['shares','post_video_views','post_impressions','link_clicks','post_type','post_id','likes','comments','dt']:
+                    filtered_fields.append(field)
+                    filtered_values.append(csv_data[int_index])
+                int_index=int_index+1
+            insert_fields = ','.join(['%s' % field for field in filtered_fields ])
+            insert_values = ','.join(['"%s"' % value for value in filtered_values ])
+            str_insert_inc = "insert into fbposts_incr(%s, dt) values(%s, %s)" % (insert_fields, insert_values, epoch)
             # logging.info(str_delete)
             # logging.info(str_insert)
             database='abejita'
             sqlupdatetaskurl = self.uri_for('update-mysql-handler')
             taskqueue.add(queue_name='db-update',url=sqlupdatetaskurl, params={
-                    'sql_string':[str_delete,str_insert],
+                    'sql_string':[str_delete,str_insert, str_insert_inc],
                     'database': database,
                     # '_csrf_token': self.csrf_token()
                 })
@@ -583,20 +1257,27 @@ class task_downloadPageHandler(BaseHandler):
 
 
 
-
+def getServerIP():
+    strsqlip = ''
+    if (os.getenv('SERVER_SOFTWARE') and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
+        strsqlip =SQLIP
+    else:
+        strsqlip='127.0.0.1'
+        # strsqlip='146.148.107.179'
+    return strsqlip
 
 
 def returnCursor(sqlstring, database):
     if sqlstring!='' and database!='':
         instance_name='crowdshoes-production:postsdata'
         if (os.getenv('SERVER_SOFTWARE') and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
-            db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db=database, user='root', charset='utf8')
+            db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db=database, user='root',  passwd='UYxe9cxuYoQ8ctV',charset='utf8')
         else:
-            # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='lucasFilms20162@', db=database)
-            db = MySQLdb.connect(host=SQLIP, port=3306, user='dashboards',  passwd='lucasFilms20162@', db=database, charset='utf8')
+            # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db=database)
+            db = MySQLdb.connect(host=getServerIP(), port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db=database, charset='utf8')
         cursor = db.cursor (MySQLdb.cursors.DictCursor)
         logging.info("#"*40)
-        # logging.info(sqlstring)
+        logging.info(sqlstring)
         c= cursor.execute(sqlstring)
         d = cursor.fetchall()
         # logging.info('return cursor: %s ' %  json.dumps(d))
@@ -610,14 +1291,16 @@ class UpdateMySQLHandler(BaseHandler):
         # logging.info(self.request.POST.items())
         sqlstring = self.request.get_all('sql_string')
         logging.info('sqlstring: %s' % sqlstring)
+
         database = self.request.get('database','')
+        logging.info('database: %s' % database)
         if sqlstring!='' and database!='':
             instance_name='crowdshoes-production:postsdata'
             if (os.getenv('SERVER_SOFTWARE') and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
-                db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db=database, user='root', charset='utf8')
+                db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db=database, user='root', passwd='UYxe9cxuYoQ8ctV',charset='utf8')
             else:
-                # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='lucasFilms20162@', db=database)
-                db = MySQLdb.connect(host=SQLIP, port=3306, user='dashboards',  passwd='lucasFilms20162@', db=database, charset='utf8')
+                # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db=database)
+                db = MySQLdb.connect(host=getServerIP(), port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db=database, charset='utf8')
 
             cursor = db.cursor()
             cursor.execute('SET NAMES utf8mb4')
@@ -665,10 +1348,10 @@ class TestMySQL(BaseHandler):
 
         instance_name='crowdshoes-production:postsdata'
         if (os.getenv('SERVER_SOFTWARE') and os.getenv('SERVER_SOFTWARE').startswith('Google App Engine/')):
-            db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db='facebook_posts', user='root', charset='utf8')
+            db = MySQLdb.connect(unix_socket='/cloudsql/' + SQLINSTANCE_NAME, db='facebook_posts', user='root',passwd='UYxe9cxuYoQ8ctV', charset='utf8')
         else:
-            # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='lucasFilms20162@', db='facebook_posts')
-            db = MySQLdb.connect(host=SQLIP, port=3306, user='dashboards',  passwd='lucasFilms20162@', db='abejita', charset='utf8')
+            # db = MySQLdb.connect(host='173.194.230.54', port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db='facebook_posts')
+            db = MySQLdb.connect(host=getServerIP(), port=3306, user='dashboards',  passwd='DgLF8CKL8EZrYRt', db='abejita', charset='utf8')
 
         cursor = db.cursor()
         cursor.execute('select count(*) from FB_INSIGHTS')
@@ -695,6 +1378,7 @@ class GeneralConfigHandler(BaseHandler):
         user = ndb.Key('User', int(self.user_id)).get()
         user.report_timezone = timezone
         user.put()
+        self.add_message('Timezone Updated!', 'info')
         self.redirect_to('general-config')
 
 class TaxonomyHandler(BaseHandler):
@@ -713,6 +1397,7 @@ class TaxonomyHandler(BaseHandler):
         else:
             page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
         params['page'] = page
+        params['page_id']=page.page_id
         self.render_template("taxonomy_admin.html",**params)
 
     @user_required
@@ -772,13 +1457,84 @@ class AvailablePostsHandler(BaseHandler):
     # 599478056788641/live_videos?fields=id,broadcast_start_time,creation_time,description,embed_html,is_manual_mode,live_views,permalink_url,planned_start_time,preview_url,status,title,stream_url,secure_stream_url
     @user_required
     def get(self, page_id):
-        params ={}
-        fb_api_key = self.app.config.get('fb_api_key')
-        fb_secret = self.app.config.get('fb_secret')
-        params['fb_api_key']=fb_api_key
-        params['fb_secret']=fb_secret
+        next_url = self.request.get('next','')
+        logging.info('next_url: %s' % next_url)
+        token = self.get_available_posts_token(page_id)
+        if next_url=='':
+            posts_url = 'https://graph.facebook.com/v2.6/%s/posts?fields=permalink_url,story,attachments,message,link,type,created_time,picture,id&access_token=%s' % (page_id, token)
+        else:
+            posts_url=next_url
+
+        self.render_available_posts(page_id,posts_url, 'data')
+
+
+
+
+    @user_required
+    def post(self,page_id):
+        logging.info(self.request.POST.items())
+        action= self.request.get('action')
+        post_ids=[]
+        if action=="get_data":
+            str_taxonomies = self.request.get('taxonomies').split(',') if self.request.get('taxonomies').strip()!='' else []
+            str_types = self.request.get('types').split(',') if self.request.get('types').strip()!='' else []
+            str_query = self.request.get('str_query').strip()
+            story_list =[]
+            type_list=[]
+            for type in str_types:
+                if type in ['link','photo','video','all']:
+                    type_list.append(type)
+                elif type in ['with','shares','live']:
+                    story_list.append(type)
+                else:
+                    pass
+            if 'all' in type_list:
+                type_list=[]
+                story_list=[]
+            type_list=["'%s'" % s for s in type_list]
+            str_taxonomies=["'%s'" % s for s in str_taxonomies]
+            logging.info(str_taxonomies)
+            logging.info(type_list)
+            logging.info(story_list)
+            logging.info(str_query)
+            tax_where=''
+            total_where_list = []
+            total_where_list.append("page_id ='%s'" % page_id)
+            if len(str_taxonomies)>0:
+                tax_where = 'post_taxonomy in (%s)' % ','.join(str_taxonomies)
+                total_where_list.append("( %s ) " % tax_where)
+
+            type_where=''
+            if len(type_list)>0:
+                type_where  = 'post_type in (%s)' % ','.join(type_list)
+                total_where_list.append("( %s ) " % type_where)
+            if len(story_list)>0:
+                story_where = ' or '.join([" story like ' %% %s %% ' " % type for type in story_list])
+                total_where_list.append("( %s ) " % story_where)
+            message_where = []
+            if len(str_query)>0:
+                message_where = "message like '%%%s%%'" %  str_query
+                total_where_list.append("( %s ) " % message_where)
+
+            if len(total_where_list) >0:
+                total_where = ' and '.join(total_where_list)
+                str_sql = "select a.post_id from fbposts_batch a left join posts_taxonomies b on a.post_id=b.post_id where %s order by created_time desc limit 10 " % total_where
+
+
+            posts_queried= returnCursor(str_sql ,'abejita')
+
+            post_ids = ['%s' % post.get('post_id') for post in  posts_queried]
+        # post_ids.append('1')
+        comma_ids = ','.join(post_ids)
+        logging.info(comma_ids)
+        token = self.get_available_posts_token(page_id)
+        posts_url = 'https://graph.facebook.com/v2.6/?ids=%s&fields=permalink_url,story,attachments,message,link,type,created_time,picture,id&access_token=%s' % (comma_ids, token)
+        logging.info(posts_url)
+        return self.render_available_posts(page_id,posts_url, 'query')
+
+    def get_available_posts_token(self, page_id):
         user = ndb.Key('User', int(self.user_id)).get()
-        user_timezone = user.report_timezone
+
         fb_user_token = ''
         token = ''
         if user:
@@ -794,14 +1550,25 @@ class AvailablePostsHandler(BaseHandler):
         else:
             token = page.page_token
 
-        next_url = self.request.get('next','')
-        logging.info('next_url: %s' % next_url)
-        if next_url=='':
-            posts_url = 'https://graph.facebook.com/v2.6/%s/posts?fields=permalink_url,story,attachments,message,link,type,created_time,picture,id&access_token=%s' % (page_id, token)
-        else:
-            posts_url=next_url
-
+        if not token:
+            token = getGeneralFBAccessToken()
         logging.info('Token: %s' % token)
+        return token
+
+
+    def render_available_posts(self,page_id,posts_url, method='data'):
+        params ={}
+        user = ndb.Key('User', int(self.user_id)).get()
+        user_timezone = user.report_timezone
+        if user.isadmin:
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+        else:
+            page = ndb.Key('Page', int(page_id), parent=ndb.Key('User',self.user_id)).get()
+        fb_api_key = self.app.config.get('fb_api_key')
+        fb_secret = self.app.config.get('fb_secret')
+        params['fb_api_key']=fb_api_key
+        params['fb_secret']=fb_secret
+
         action=self.request.get('action','')
         status=self.request.get('status','')
         video_id =self.request.get('video_id','')
@@ -809,9 +1576,18 @@ class AvailablePostsHandler(BaseHandler):
         print action,status
         print 'posts_url: %s ' % posts_url
         r  =urlfetch.fetch(posts_url)
-        data_posts=json.loads( r.content).get('data',[])
-        paging_posts=json.loads(r.content).get('paging',{})
-
+        if method=='data':
+            data_posts=json.loads( r.content).get('data',[])
+            paging_posts=json.loads(r.content).get('paging',{})
+        elif method=='query':
+            logging.info(json.loads( r.content).get('error',''))
+            if json.loads( r.content).get('error','')!='':
+                data_posts=[]
+            else:
+                data_posts=[ value for key, value in  json.loads( r.content).iteritems()]
+            paging_posts={}
+        logging.info('*'*30)
+        logging.info(data_posts)
         transformed_posts = []
         post_id_list = []
         for post in data_posts:
@@ -831,7 +1607,7 @@ class AvailablePostsHandler(BaseHandler):
                 post['attachment_description']=attachment_description
                 post['attachment_title']=attachment_title
                 post['created_time'] =display_time
-
+        post_id_list.append('1')
         quoted_taxonomy_arr = ["'%s'" % post for post in  post_id_list]
 
         tax_query="select post_id, post_taxonomy from posts_taxonomies where post_id in (%s)" % ','.join(quoted_taxonomy_arr)
@@ -856,11 +1632,16 @@ class AvailablePostsHandler(BaseHandler):
             joined_transformed_posts.append(post)
 
 
+
+        params['str_taxonomies'] = self.request.get('taxonomies').split(',') if self.request.get('taxonomies').strip()!='' else []
+        params['str_types'] = self.request.get('types').split(',') if self.request.get('types').strip()!='' else []
+        params['str_query'] = self.request.get('str_query').strip()
         # logging.info('cursor: %s' % json.dumps(taxonomy_arr))
         # logging.info('post_ids_list: %s' % post_id_list)
         params['timezone'] = user_timezone
         params['posts'] = joined_transformed_posts
         params['page']=page.to_dict()
+
         params['page_id']=page_id
         params['page_token'] = page.page_token
         params['page_name'] = page.name
@@ -868,15 +1649,40 @@ class AvailablePostsHandler(BaseHandler):
         params['page_photo_taxonomies'] = page.photo_taxonomies.split(',')
         params['page_link_taxonomies'] = page.link_taxonomies.split(',')
         params['page_video_taxonomies'] = page.video_taxonomies.split(',')
+        all_taxonimies = list(set(page.general_taxonomies.split(',')+ page.photo_taxonomies.split(',') +page.link_taxonomies.split(',')+page.video_taxonomies.split(',')))
+        all_taxonimies.sort()
+        params['page_all_taxonomies'] = all_taxonimies
         params['page_previous'] =urllib.quote_plus(paging_posts.get('previous',''))
         params['page_next'] =urllib.quote_plus(paging_posts.get('next',''))
+
         self.render_template('available_posts.html',**params)
 
 
+class ExtendGeneralFbUserTokenRequestHandler(BaseHandler):
     @user_required
-    def post(self):
-        pass
-
+    def get(self):
+        params = {}
+        user_id = int(self.user_id)
+        fb_user_id  =  self.request.get('user_id')
+        short_token = self.request.get('token')
+        fb_api_key = self.app.config.get('fb_api_key')
+        fb_secret = self.app.config.get('fb_secret')
+        exchange_url = "https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&fb_exchange_token=%s&client_id=%s&client_secret=%s" % (short_token, fb_api_key, fb_secret)
+        logging.info(exchange_url)
+        logging.info('before')
+        res = urlfetch.fetch(url=exchange_url)
+        logging.info('exchange_token_response:%s' % res.content)
+        logging.info('after')
+        if res.status_code==200:
+            j_res = json.loads(res.content)
+            newtoken = j_res.get('access_token','')
+            # newtoken = res.content.split('=')[1].replace('&expires','')
+            db_access_token = localmodels.FBAccess_Token.get_or_insert('root_access_token')
+            db_access_token.fb_access_token = newtoken
+            db_access_token.put()
+            self.response.out.write(newtoken)
+        else:
+            self.response.out.write('')
 
 class ExtendFbUserTokenRequestHandler(BaseHandler):
     @user_required
@@ -894,14 +1700,20 @@ class ExtendFbUserTokenRequestHandler(BaseHandler):
         logging.info('exchange_token_response:%s' % res.content)
         logging.info('after')
         if res.status_code==200:
-            newtoken = res.content.split('=')[1].replace('&expires','')
+            j_res = json.loads(res.content)
+            # newtoken = res.content.split('=')[1].replace('&expires','')
+            newtoken = j_res.get('access_token','')
             db_user = ndb.Key('User', user_id).get()
             if db_user:
+                logging.info('db_user exists: %s' % db_user)
                 db_user.fb_access_token = newtoken
                 db_user.put()
+            else:
+                logging.info('db_user_does not exist')
             self.response.out.write(newtoken)
         else:
             self.response.out.write('')
+            logging.info(res.content)
 
 
         # self.response.out.write('')
@@ -911,9 +1723,12 @@ class PagesHandler(BaseHandler):
         fb_secret = self.app.config.get('fb_secret')
         exchange_url = "https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&fb_exchange_token=%s&client_id=%s&client_secret=%s" % (access_token, fb_api_key, fb_secret)
         res = urlfetch.fetch(url=exchange_url)
+        logging.info(res.content)
         logging.info('after')
         if res.status_code==200:
-            newtoken = res.content.split('=')[1].replace('&expires','')
+            # newtoken = res.content.split('=')[1].replace('&expires','')
+            j_res = json.loads(res.content)
+            newtoken = j_res.get('access_token','')
             # self.response.out.write(newtoken)
             return newtoken
         else:
@@ -936,6 +1751,8 @@ class PagesHandler(BaseHandler):
             page_token = self.request.get('page_token')
             user_access_token = self.request.get('user_access_token')
             pre_existent_pages = localmodels.Page.query(localmodels.Page.page_id==page_id).fetch()
+            logging.info(page_token)
+            logging.info(user_access_token)
             if user_access_token!='':
                 user.fb_access_token= user_access_token
                 user.put()

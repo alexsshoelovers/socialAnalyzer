@@ -67,4 +67,8 @@ class PagePost(ndb.Model):
     #: Modification date.
     updated = ndb.DateTimeProperty(auto_now=True)
 
-
+class FBAccess_Token(ndb.Model):
+    fb_access_token= ndb.StringProperty(default='')
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    #: Modification date.
+    updated = ndb.DateTimeProperty(auto_now=True)

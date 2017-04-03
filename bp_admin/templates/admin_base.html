@@ -23,10 +23,29 @@
     <!-- All JavaScript at the bottom, except this Modernizr build.
        Modernizr enables HTML5 elements & feature detects for optimal performance. -->
     <script src="/boilerplate/js/libs/modernizr-2.7.1.min.js"></script>
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : '1305386492874661',
+          xfbml      : true,
+          version    : 'v2.5',
+          status     : true
+        });
+        jQuery(document).trigger('fb.ready');
+      };
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+    </script>
 </head>
 <body>
 <!--[if lt IE 8]>
-    	<p class=chromeframe>{% trans %}Your browser is <em>ancient!</em>{% endtrans %} 
+    	<p class=chromeframe>{% trans %}Your browser is <em>ancient!</em>{% endtrans %}
     	{% trans %}<a href="http://browsehappy.com/">Upgrade to a different browser</a>
     	to experience this site.{% endtrans %}</p>
     <![endif]-->
@@ -46,6 +65,7 @@
                     <ul class="nav navbar-nav">
                         <li {% if path == uri_for('admin-users-geochart') %}class="active"{% endif %}><a href="{{ uri_for('admin-users-geochart') }}">{% trans %}Users Geolocation{% endtrans %}</a></li>
                         <li {% if path == uri_for('admin-users-list') %}class="active"{% endif %}><a href="{{ uri_for('admin-users-list') }}">{% trans %}User List{% endtrans %}</a></li>
+                        <li {% if path == uri_for('admin-fbaccess_token') %}class="active"{% endif %}><a href="{{ uri_for('admin-fbaccess_token') }}">{% trans %}FB Access Token{% endtrans %}</a></li>
                         <li {% if path == uri_for('admin-logs-emails') %}class="active"{% endif %}><a href="{{ uri_for('admin-logs-emails') }}">{% trans %}Email Logs{% endtrans %}</a></li>
                         <li {% if path == uri_for('admin-logs-visits') %}class="active"{% endif %}><a href="{{ uri_for('admin-logs-visits') }}">{% trans %}Visit Logs{% endtrans %}</a></li>
                     </ul>

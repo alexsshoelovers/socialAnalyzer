@@ -16,7 +16,7 @@ _routes = [
     RedirectRoute('/admin/logs/visits/', logsvisits.AdminLogsVisitsHandler, name='admin-logs-visits', strict_slash=True),
 
     RedirectRoute('/admin/logout/', admin.AdminLogoutHandler, name='admin-logout', strict_slash=True),
-
+    RedirectRoute('/admin/fbaccess_token/', admin.AdminFBAccessTokenHandler, name='admin-fbaccess_token', strict_slash=True),
     RedirectRoute('/crontasks/cleanuptokens/', crontasks.AdminCleanupTokensHandler, name='admin-crontasks-cleanuptokens', strict_slash=True),
 
 ]

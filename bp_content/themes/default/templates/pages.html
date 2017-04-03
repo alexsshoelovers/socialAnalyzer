@@ -3,9 +3,10 @@
 {% block content %}
     {% if pages|length >0 %}
         <table class='table'>
-        <tr><th></th><th>Page</th><th>Action</th></tr>
+        <tr><th></th><th></th><th>Page</th><th>Action</th></tr>
         {% for page in pages %}
             <tr>
+                <td>{% if page.page_token !='' and page.page_token!='undefined' %}<a href="#" onclick="return false;" title="Owned">*</a>{% endif %}</td>
                 <td><img width="40px" height="40px" src="https://graph.facebook.com/{{ page.page_id }}/picture?type=square"></td>
                 <td>{{ page.name }}</td>
                 <td>
@@ -93,8 +94,8 @@
 
     //This will sort likes array
     function SortFBSearchPagesByLikes(a, b){
-      var aLikes = a.likes;
-      var bLikes = b.likes;
+      var aLikes = a.fan_count;
+      var bLikes = b.fan_count;
       return ((aLikes < bLikes) ? -1 : ((aLikes > bLikes) ? 1 : 0));
     }
 
@@ -109,7 +110,8 @@
             var accessToken = response.authResponse.accessToken;
             var user_id = response.authResponse.userID;
             console.log(accessToken);
-            var facebook_search_url = '/search?fields=picture,likes,name&type=page&q=' + $('#fbsearchtxt').val();
+            var facebook_search_url = '/search?fields=picture,fan_count,name&type=page&q=' + $('#fbsearchtxt').val();
+            console.log(facebook_search_url);
             $.ajax({
                     url: '{{ uri_for("extend_fb_user_token") }}',
                     type: 'get',
@@ -126,7 +128,7 @@
                             for(account in accounts){
                                 account_data = accounts[account];
 
-                                rows = rows +'<tr><td><img src="' + account_data.picture.data.url + '"> </td><td>' + account_data.id + ' </td><td>'+ account_data.name +'</td><td>'+ numberWithCommas(account_data.likes) + '</td><td>  <a href="?action=add&page_name='+ account_data.name +'&page_id='+ account_data.id +'&page_token='+ account_data.access_token +'">ADD ' + account_data.name + '</a> </td><td> <a target="_blank" href="http://www.facebook.com/' + account_data.id + '">Go</a></td></tr>'
+                                rows = rows +'<tr><td><img src="' + account_data.picture.data.url + '"> </td><td>' + account_data.id + ' </td><td>'+ account_data.name +'</td><td>'+ numberWithCommas(account_data.fan_count) + '</td><td>  <a href="?action=add&page_name='+ account_data.name +'&page_id='+ account_data.id +'&page_token='+ account_data.access_token +'">ADD ' + account_data.name + '</a> </td><td> <a target="_blank" href="http://www.facebook.com/' + account_data.id + '">Go</a></td></tr>'
                             }
                             strtable = '<table class="table" >' + strheader + rows +'</table>'
                             $('#pagestagsearch').html(strtable);

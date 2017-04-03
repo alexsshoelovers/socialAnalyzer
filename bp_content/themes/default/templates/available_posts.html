@@ -1,4 +1,4 @@
-{% extends base_layout %}
+{% extends "base_stats.html" %}
  {% block mediaCSS %}
 <style>
     .label-as-badge {
@@ -31,7 +31,33 @@
   </div>
 </div>
 <!-- end modal -->
-<h2>Published Posts</h2>
+<h2>Published Posts <div class="btn btn-info" data-toggle="collapse" data-target="#demo"> <i class="glyphicon glyphicon-search" title="Go To"></i>
+Search</div></h2>
+
+<div id="demo" class="collapse">
+<input type="text" name="txtsearch" id="txtsearch" value="{{ str_query }}" ><br/>
+{% for taxonomy in page_all_taxonomies %}
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge label-default {% if taxonomy in str_taxonomies %} label-warning class-search{% endif %}" data-type="tax {{taxonomy}}">{{ taxonomy }}</span>
+{% endfor %}<br/>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge   label-default {% if 'all' in str_types %} label-warning class-search{% endif %}" data-type="typ all">all</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge   label-default {% if 'photo' in str_types %} label-warning class-search{% endif %}" data-type="typ photo">photo</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge  label-default {% if 'video' in str_types %} label-warning class-search{% endif %}" data-type="typ video">video</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge  label-default {% if 'link' in str_types %} label-warning class-search{% endif %}" data-type="typ link">link</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge  label-default {% if 'with' in str_types %} label-warning class-search{% endif %}" data-type="typ with">with</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge  label-default {% if 'shared' in str_types %} label-warning class-search{% endif %}" data-type="typ shared">shared</span>
+<span onclick="jQuery(this).toggleClass('label-warning');jQuery(this).toggleClass('class-search');" class="label label-as-badge  label-default {% if 'live' in str_types %} label-warning class-search{% endif %}" data-type="typ live">live</span>
+<div class="btn btn-warning " onclick='searchPosts();'>Search</div>
+<table >
+<tr>
+    <td></td>
+<tr>
+<tr>
+    <td></td>
+</tr>
+</table>
+</div>
+
+
     <table class="table table-striped"><tr><th>Post_id</th><th>Image</th><th>Type</th><th>Message</th><th>Time (UTC {{ timezone }})</th></tr>
 {% for post in posts %}
     <tr>
@@ -79,6 +105,13 @@
 {% if next !='' %}
     <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_next|safe}}" class="btn btn-info">Load next page    </a>
 {% endif %}
+<form method="POST" id='search_form' name='search_form' action='{{ uri_for('available-posts', page_id=page.page_id) }}'>
+    <input type='hidden' name='_csrf_token' id='_csrf_token' value='{{ csrf_token() }}'/>
+    <input type='hidden' name='action' id='action' value='get_data'/>
+    <input type='hidden' name='taxonomies' id='frm_taxonomies' value=''/>
+    <input type='hidden' name='types' id='frm_types' value=''/>
+    <input type='hidden' name='str_query' id='frm_str_query' value=''/>
+</form>
 {% endblock %}
 
 {% block mediaJS %}
@@ -119,5 +152,36 @@
     function changeLiveVideoStatus(videoid,status){
         window.location = '?status='+ status +'&action=update_live&video_id=' +videoid;
     }
+
+    function searchPosts(){
+        var attributes  = $('.class-search');
+        tax_arr=[];
+        typ_arr=[];
+        for(i=0;i<attributes.length;i++)
+        {
+            data = $(attributes[i]).data('type')
+            type = data.substr(0,3);
+            if(type == 'tax'){
+                var_taxonomy = data.substr(4,data.length-4)
+                tax_arr.push(var_taxonomy);
+            }
+            else if(type=='typ'){
+                var_type = data.substr(4,data.length-4)
+                typ_arr.push(var_type);
+            }
+
+
+        }
+            console.log(tax_arr);
+            console.log(typ_arr);
+            str_taxonimies = tax_arr.join();
+            str_types = typ_arr.join();
+            str_url = '{{ uri_for("available-posts", page_id=page_id) }}';
+            $('#frm_taxonomies').val(str_taxonimies);
+            $('#frm_types').val(str_types);
+            $('#frm_str_query').val($('#txtsearch').val());
+            $('#search_form').submit();
+    }
+
 </script>
 {% endblock %}

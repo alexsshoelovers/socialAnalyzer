@@ -1,4 +1,5 @@
 application: socialanalyzer-157404
+# application: slpublishertools
 version: dev
 runtime: python27
 api_version: 1

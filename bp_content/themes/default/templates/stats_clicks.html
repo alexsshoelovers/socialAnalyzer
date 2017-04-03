@@ -1,0 +1,99 @@
+{% extends "base_stats.html" %}
+{% block content %}
+<h1>{{ page.name }}</h1>
+{% if page.page_token and page.page_token!='' and page.page_token!='undefined' %}
+    <input  type="hidden" id="comparing_page_id" value="">
+    <input  type="hidden" id="daterange_filter" value="twomonths">
+    <a href="#" id="daterange_filter_1" onclick="selectDateRangeFilter(1,'week');return false;" class="label label-as-badge label-default ">Week</a>
+    <a href="#" id="daterange_filter_2" onclick="selectDateRangeFilter(2,'month');return false;" class="label label-as-badge label-default ">Month</a>
+    <a href="#" id="daterange_filter_3" onclick="selectDateRangeFilter(3,'twomonths');return false;" class="label label-as-badge label-default label-success ">Two months</a>
+    <h2>Historical posts clicks sum (grouped by day)</h2>
+    <div id="post_clicks_graph"></div>
+    <h2>Link clicks (FB Graph Number - auto updated every minute)</h2>
+    <div id="post_today_clicks_graph"></div>
+
+
+{% else %}
+You can only see clicks from pages you own. (Upgrade to pro version to see a click prediction for pages you don't own)
+{% endif %}
+{% endblock %}
+{% block mediaJS %}
+<script>
+function selectDateRangeFilter(id, name){
+    for(i=1;i<=3;i++){
+        $('#daterange_filter_' + i).removeClass('label-success');
+    }
+    $('#daterange_filter_' + id).addClass('label-success');
+    $('#daterange_filter').val(name);
+    compareStats(0);
+    if($('#comparing_page_id').val()!=''){
+        compareStats(1);
+    }
+}
+
+function fill_data(page_id, element_label){
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/clicks?action=get_data&dataset=clicks&type_filter=' + $('#type_filter').val() +  '&order_filter=' + $('#order_filter').val() + '&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType: 'json',
+            success: function (data) {
+                console.log(data);
+                y=[];
+                x=[];
+                for(i=0;i<data.length; i++){
+                     y.push(data[i].clicks);
+                     x.push(data[i].date);
+                }
+                data_clicks = [{y: y, x:x}];
+                Plotly.newPlot('post_clicks_graph'+ element_label, data_clicks);
+            }
+        });
+
+        getClicks(page_id, element_label);
+        var myVar = setInterval(function(){ getClicks(page_id, element_label) }, 60000);
+
+
+
+
+
+}
+
+function getClicks(page_id, element_label){
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/clicks?action=get_data&dataset=today_clicks&type_filter=' + $('#type_filter').val() +  '&order_filter=' + $('#order_filter').val() + '&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType: 'json',
+            success: function (data) {
+                Plotly.newPlot('post_today_clicks_graph'+ element_label, data);
+            }
+        });
+
+}
+
+fill_data('{{ page_id }}','');
+
+function compareStats(which){
+
+    comparison=true;
+
+    if(which==1){
+        $('.initially_hidden').show();
+        var page_id = $('#opt_page1').val();
+        $('#comparing_page_id').val(page_id);
+        fill_data(page_id,'1');
+
+    }else{
+        fill_data('{{page_id}}','');
+    }
+
+
+}
+
+
+</script>
+
+
+{% endblock %}

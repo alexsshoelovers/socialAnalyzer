@@ -1,0 +1,401 @@
+{% extends "base_stats.html" %}
+{% block content %}
+<style>
+     .initially_hidden {
+        display:none;
+     }
+</style>
+<h1>{{ page.name }}</h1>
+<input  type="hidden" id="daterange_filter" value="twomonths">
+<input  type="hidden" id="comparing_page_id" value="">
+<a href="#" id="daterange_filter_1" onclick="selectDateRangeFilter(1,'week');return false;" class="label label-as-badge label-default ">Week</a>
+<a href="#" id="daterange_filter_2" onclick="selectDateRangeFilter(2,'month');return false;" class="label label-as-badge label-default ">Month</a>
+<a href="#" id="daterange_filter_3" onclick="selectDateRangeFilter(3,'twomonths');return false;" class="label label-as-badge label-default label-success">Two months</a>
+<div class="container">
+    <div class="row">
+        <div class="col-xs-6 hidden">
+            <h2>Compare with</h2>
+            <select id="opt_page">
+            {% for page in pages %}
+                <option value="{{ page.page_id }}"">{{ page.name }}</option>
+            {% endfor %}
+            </select>
+            <div class="btn btn-info btn-small small" onclick="compareStats(0);">Go</div>
+        </div>
+        <div class="col-xs-6">
+            <h2>Compare with</h2>
+            <select id="opt_page1">
+            {% for page in pages %}
+                <option value="{{ page.page_id }}"">{{ page.name }}</option>
+            {% endfor %}
+            </select>
+            <div class="btn btn-info btn-small small" onclick="compareStats(1);">Go</div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Page Fans</h2>
+            <div id='page_fans_graph'></div>
+            <table class="table table-striped">
+                <tr><td>Total fans</td><td><div id="total_fans"></div></td></tr>
+                <tr><td>Total change</td><td><div id="total_change"></div></td></tr>
+                <tr><td>Max Change</td><td><div id="max_change"></div></td></tr>
+                <tr><td>Avg.Change</td><td><div id="avg_change"></div></td></tr>
+            </table>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Page Fans</h2>
+            <div id='page_fans_graph1'></div>
+            <table class="table table-striped">
+                <tr><td>Total fans</td><td><div id="total_fans1"></div></td></tr>
+                <tr><td>Total change</td><td><div id="total_change1"></div></td></tr>
+                <tr><td>Max Change</td><td><div id="max_change1"></div></td></tr>
+                <tr><td>Avg.Change</td><td><div id="avg_change1"></div></td></tr>
+            </table>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6 ">
+            <h2>Fans growth</h2>
+            <div id='pans_fans_growth'></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Fans growth</h2>
+            <div id='pans_fans_growth1'></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Fans Countries</h2>
+            <div id="chart_div" style="width:100%;"></div><br/>
+            <div id="geo_table" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Fans Countries</h2>
+            <div id="chart_div1" style="width:100%;"></div><br/>
+            <div id="geo_table1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Page Reach</h2>
+            <div id="page_reach_by_type" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Page Reach</h2>
+            <div id="page_reach_by_type1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Page Post Type</h2>
+            <div id="post_type_graph" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Page Post Type</h2>
+            <div id="post_type_graph1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Page Engagement</h2>
+            <div id="page_engagement_by_type" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Page Engagement</h2>
+            <div id="page_engagement_by_type1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Post type distribution</h2>
+            <div id="post_type_distribution" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Post type distribution</h2>
+            <div id="post_type_distribution1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Page engagement distribution</h2>
+            <div id="page_engagement_distribution" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Page engagement distribution</h2>
+            <div id="page_engagement_distribution1" ></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6">
+            <h2>Most engaged post type (Interactions per 1000 fans) </h2>
+            <div id="most_engaged_post_type" ></div>
+        </div>
+        <div class="col-xs-6 initially_hidden">
+            <h2>Most engaged post type (Interactions per 1000 fans) </h2>
+            <div id="most_engaged_post_type1" ></div>
+        </div>
+    </div>
+</div>
+
+
+
+{{page_fans}}
+{% endblock %}
+{% block mediaJS %}
+<script src='https://www.google.com/jsapi'></script>
+<script>
+
+function selectDateRangeFilter(id, name){
+    for(i=1;i<=3;i++){
+        $('#daterange_filter_' + i).removeClass('label-success');
+    }
+    $('#daterange_filter_' + id).addClass('label-success');
+    $('#daterange_filter').val(name);
+    compareStats(0);
+    if($('#comparing_page_id').val()!=''){
+        compareStats(1);
+    }
+}
+
+
+
+function numberWithCommas(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+function compare_countries(a, b) {
+           if (a[1] < b[1]) return -1;
+           if (a[1] > b[1]) return 1;
+           return 0;
+         }
+
+
+function fill_data(page_id, element_label){
+var fans;
+//purge plots
+Plotly.purge('page_fans_graph'+ element_label);
+Plotly.purge('pans_fans_growth'+ element_label);
+Plotly.purge('page_reach_by_type'+ element_label);
+Plotly.purge('post_type_graph'+ element_label);
+Plotly.purge('page_engagement_by_type'+ element_label);
+Plotly.purge('post_type_distribution'+ element_label);
+Plotly.purge('page_engagement_distribution'+ element_label);
+Plotly.purge('most_engaged_post_type'+ element_label);
+$('total_fans' + element_label).text('');
+$('total_change' + element_label).text('');
+$('max_change' + element_label).text('');
+$('avg_change' + element_label).text('');
+$('geo_table' + element_label).html('');
+
+$.ajax({
+        url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=page_fans&daterange_filter=' + $('#daterange_filter').val(),
+        type: 'get',
+        dataType: 'json',
+        data: {},
+        success: function (data) {
+            y=[];
+            x=[];
+            z=[];
+            a=[];
+            total_fans = 0;
+            total_change=0;
+            max_change=0;
+            max_date='';
+            avg_change=0;
+            num_data = 0
+           for(i=0;i<data.length; i++){
+                // console.log(data[i].fans)
+                num_data ++;
+                total_fans = parseInt(data[i].fans);
+
+                y.push(data[i].fans);
+                x.push(data[i].date);
+                if(i==0){
+                    z.push(0);
+                }else{
+                    change =data[i].fans-data[i-1].fans;
+                    z.push(change);
+                    total_change=total_change + change;
+                    if(change>max_change){
+                        max_change=change;
+                        max_date = data[i].date;
+                    }
+                }
+
+           }
+           avg_change = total_change/num_data;
+           $('#total_fans'+ element_label).text(numberWithCommas(total_fans));
+           $('#total_change'+ element_label).text(numberWithCommas(total_change));
+           $('#max_change'+ element_label).text(numberWithCommas(max_change));
+           $('#avg_change'+ element_label).text(numberWithCommas(avg_change));
+           for(i=0;i<y.length; i++){
+                a.push(avg_change);
+           }
+           data_fans = [{y: y, x:x}];
+           data_growth = [{y:z, x:x, type: 'bar', 'name':'growth'}, {y:a, x:x, type: 'scatter', 'name':'average'} ];
+           Plotly.newPlot('page_fans_graph'+ element_label, data_fans);
+           Plotly.newPlot('pans_fans_growth'+ element_label, data_growth);
+        }
+    });
+
+    $.ajax({
+        url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=post_type_count&daterange_filter=' + $('#daterange_filter').val(),
+        type: 'get',
+        data: {},
+        success: function (data) {
+            Plotly.newPlot('post_type_graph'+ element_label, data);
+        }
+    });
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=post_type_distribution&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType:'json',
+            success: function (data) {
+                var layout = {
+                      height: 400,
+                      width: 500
+                    };
+
+                Plotly.newPlot('post_type_distribution'+ element_label, data, layout);
+            }
+        });
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=page_engagement_daily&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType:'json',
+            success: function (data) {
+
+                var layout = {
+                  barmode: 'stack',
+                  yaxis2: {
+                    titlefont: {color: 'rgb(148, 103, 189)'},
+                    tickfont: {color: 'rgb(148, 103, 189)'},
+                    overlaying: 'y',
+                    side: 'right'
+                  }
+                };
+                Plotly.newPlot('page_engagement_by_type'+ element_label, data, layout);
+            }
+        });
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=page_reach_by_type&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType:'json',
+            success: function (data) {
+
+                var layout = {
+                  barmode: 'stack',
+                  yaxis2: {
+                    titlefont: {color: 'rgb(148, 103, 189)'},
+                    tickfont: {color: 'rgb(148, 103, 189)'},
+                    overlaying: 'y',
+                    side: 'right'
+                  }
+                };
+                Plotly.newPlot('page_reach_by_type'+ element_label, data, layout);
+            }
+        });
+
+
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=page_engagement_distribution&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            dataType: 'json',
+            success: function (data) {
+                var layout = {
+                      height: 400,
+                      width: 500
+                    };
+
+                Plotly.newPlot('page_engagement_distribution'+ element_label, data, layout);
+            }
+        });
+
+    $.ajax({
+            url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=most_engaged_post_type&daterange_filter=' + $('#daterange_filter').val(),
+            type: 'get',
+            data: {},
+            success: function (data) {
+                Plotly.newPlot('most_engaged_post_type'+ element_label, data);
+            }
+        });
+
+        google.load('visualization', '1', {'packages': ['geochart']});
+        google.setOnLoadCallback(drawRegionsMap(page_id, element_label));
+
+
+
+        function drawRegionsMap(page_id, element_label) {
+
+            $.ajax({
+                    url: '/page_stats/'+ page_id + '/overview?action=get_data&dataset=page_countries&daterange_filter=' + $('#daterange_filter').val(),
+                    type: 'get',
+                    data: {},
+                    dataType: 'json',
+                    success: function (data_countries) {
+                        var data = google.visualization.arrayToDataTable(data_countries);
+                        var options = {};
+                        var chart = new google.visualization.GeoChart(document.getElementById('chart_div'+ element_label));
+                        chart.draw(data, options);
+                        // remove title
+                        data_countries.splice(0, 1);
+                        data_countries.sort(compare_countries).reverse();
+                        total_fans = 0;
+                        for(i=0;i<data_countries.length;i++){
+                            // console.log(total_fans);
+                            total_fans = total_fans + data_countries[i][1];
+                        }
+
+                        total_percentage=0;
+                        i=0;
+                        rows = "";
+                        while(total_percentage<.80){
+                            // console.log(data_countries[i]);
+                            rows = rows + "<tr><td>" + data_countries[i][0]+ "</td><td>" + numberWithCommas( data_countries[i][1])  + "</td><td>"+ (data_countries[i][1]/total_fans*100).toFixed(2) +"%</td></tr>"
+                            total_percentage = total_percentage + (data_countries[i][1]/total_fans);
+                            // console.log(total_percentage);
+                            i++;
+                        }
+                        str_table = "<table class='table table-striped'><tr><th>Country</th><th>Fans</th><th>%</th></tr>" + rows + "</table>";
+                        $('#geo_table'+ element_label).html(str_table);
+                    }
+                });
+
+        }
+}
+// end fill_data function
+fill_data('{{ page_id }}','');
+
+
+function compareStats(which){
+
+    comparison=true;
+
+    if(which==1){
+        $('.initially_hidden').show();
+        var page_id = $('#opt_page1').val();
+        fill_data(page_id,'1');
+    }else{
+        var page_id = '{{ page_id }}';
+        fill_data(page_id,'');
+    }
+
+
+}
+
+
+    </script>
+{% endblock %}
+
+
+

@@ -1,29 +1,17 @@
-{% extends base_layout %}
- {% block mediaCSS %}
- {% for csslib in css %}
-    <link rel="stylesheet" type="text/css" href="{{ csslib }}">
-    <style type="text/css">
-        @media print { body { -webkit-print-color-adjust: exact; } }
-
-        .compareTitle { display: none; }
-    </style>
- {% endfor %}
-
-
-
-
-<style>
-
-</style>
- {% endblock %}
+{% extends "base_stats.html" %}
 {% block content %}
+<style>
+     .initially_hidden {
+        display:none;
+     }
+</style>
     {% if page %}
         <h1><a href="{{ uri_for('available-posts', page_id = page.page_id )}}">{{ page.name }}</a> ( {{  '{0:,}'.format(page_likes) }} likes )</h1>
         <table>
             <tr>
                 <td width="50%">
                 </td>
-                <td width="50%">
+                <td  width="50%">
                     <h2>Compare with</h2>
                     <select id="opt_page">
                     {% for page in pages %}
@@ -38,7 +26,7 @@
                     <h2>Days/Posts Recorded</h2>
                     <div id='output_days_posts_recorded'>Loading stats...</div>
                 </td>
-                <td>
+                <td class='initially_hidden'>
                     <h2 class=compareTitle>Days/Posts Recorded</h2>
                     <div id='output_days_posts_recorded2'></div>
                 </td>
@@ -57,7 +45,7 @@
                     </ul>
                     <div id='output_date_hour_posts'>Loading stats...</div>
                 </td>
-                <td>
+                <td class='initially_hidden'>
                     <h1 class="compareTitle" >Weekly Calendar Stats</h1>
                     <ul class="nav nav-pills compareTitle">
                       <li role="presentation" class="active"><a onclick="change_content_type('');return false;"  href="#">All</a></li>
@@ -76,7 +64,7 @@
                     <h1>Content Type Distribution </h1>
                     <div id='output_post_type_distribution'>Loading stats...</div>
                 </td>
-                <td>
+                <td class='initially_hidden'>
                      <h1 class="compareTitle">Content Type Distribution </h1>
                     <div id='output_post_type_distribution2'></div>
                 </td>
@@ -86,7 +74,7 @@
                     <h1>Day - Type Histogram </h1>
                     <div id='output_day_type_distribution'>Loading stats...</div>
                 </td>
-                <td>
+                <td  class='initially_hidden'>
                      <h1 class="compareTitle">Day - Type Histogram</h1>
                     <div id='output_day_type_distribution2'></div>
                 </td>
@@ -96,7 +84,7 @@
                     <h1>Hour - Type Histogram </h1>
                     <div id='output_hour_type_distribution'>Loading stats...</div>
                 </td>
-                <td>
+                <td class='initially_hidden'>
                      <h1 class="compareTitle">Hour - Type Histogram</h1>
                     <div id='output_hour_type_distribution2'></div>
                 </td>
@@ -150,6 +138,7 @@
 
 
                 function compareStats(){
+                    $('.initially_hidden').show();
                     comparison=true;
                     var page_id = $('#opt_page').val();
                     date_hour_posts_pivot(page_id, "output_date_hour_posts2")

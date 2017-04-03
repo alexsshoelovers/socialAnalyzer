@@ -1,0 +1,80 @@
+{% extends "base_stats.html" %}
+{% block content %}
+<style>
+     .initially_hidden {
+        display:none;
+     }
+</style>
+<h1>{{ page.name }}</h1>
+<h2>Monthly Reach Distribution<span id='total_reach'></span></h2>
+<div id="chart_div" style="width:100%;"></div><br/>
+<h2>Monthly Reach Distribution</h2>
+<div id="geo_table" ></div>
+{% endblock %}
+{% block mediaJS %}
+<script src='https://www.google.com/jsapi'></script>
+<script>
+        page_id='{{ page_id }}';
+        element_label = '';
+        google.load('visualization', '1', {'packages': ['geochart']});
+        google.setOnLoadCallback(drawRegionsMap(page_id, element_label));
+
+        function numberWithCommas(x) {
+            var parts = x.toString().split(".");
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            return parts.join(".");
+        }
+
+        function compare_countries(a, b) {
+           if (a[1] < b[1]) return -1;
+           if (a[1] > b[1]) return 1;
+           return 0;
+         }
+
+
+        function drawRegionsMap(page_id, element_label) {
+
+            $.ajax({
+                    url: '/page_stats/'+ page_id + '/reach_geo?action=get_data&dataset=page_reach_geo&daterange_filter=' + $('#daterange_filter').val(),
+                    type: 'get',
+                    data: {},
+                    dataType: 'json',
+                    success: function (data_countries) {
+                        var data = google.visualization.arrayToDataTable(data_countries);
+                        var options = {
+                            colorAxis: {colors: ['#f00a71']}
+                        };
+                        var chart = new google.visualization.GeoChart(document.getElementById('chart_div'+ element_label));
+                        chart.draw(data, options);
+                        // remove title
+                        data_countries.splice(0, 1);
+                        data_countries.sort(compare_countries).reverse();
+                        total_fans = 0;
+                        for(i=0;i<data_countries.length;i++){
+                            // console.log(total_fans);
+                            total_fans = total_fans + data_countries[i][1];
+                        }
+                        $('#total_reach').text('  (' + numberWithCommas(total_fans)+ ' unique total)  ');
+                        total_percentage=0;
+                        i=0;
+                        rows = "";
+                        while(total_percentage<.80){
+                            // console.log(data_countries[i]);
+                            rows = rows + "<tr><td>" + data_countries[i][0]+ "</td><td>" + numberWithCommas( data_countries[i][1])  + "</td><td>"+ (data_countries[i][1]/total_fans*100).toFixed(2) +"%</td></tr>"
+                            total_percentage = total_percentage + (data_countries[i][1]/total_fans);
+                            // console.log(total_percentage);
+                            i++;
+                        }
+                        str_table = "<table class='table table-striped'><tr><th>Country</th><th>Reach</th><th>%</th></tr>" + rows + "</table>";
+                        $('#geo_table'+ element_label).html(str_table);
+                    }
+                });
+
+        }
+
+        drawRegionsMap('{{ page_id }}', '')
+</script>
+{% endblock %}
+
+
+

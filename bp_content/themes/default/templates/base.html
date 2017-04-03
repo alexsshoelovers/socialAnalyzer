@@ -30,7 +30,7 @@
     <script>
       window.fbAsyncInit = function() {
         FB.init({
-          appId      : '1498140220488764',
+          appId      : '1305386492874661',
           xfbml      : true,
           version    : 'v2.5',
           status     : true
@@ -197,6 +197,7 @@
                 </p>
             {% endfor %}
         {% endif %}
+        {% block page_navbar %}{% endblock %}
         {% block content %}{% endblock %}
 
         {% block footer %}

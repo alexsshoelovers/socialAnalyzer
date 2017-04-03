@@ -15,8 +15,8 @@ config = {
     'captcha_public_key': "6Ldi0u4SAAAAAC8pjDop1aDdmeiVrUOU2M4i23tT",
     'captcha_private_key': "6Ldi0u4SAAAAAPzk1gaFDRQgry7XW4VBvNCqCHuJ",
      # callback url must be: http://[YOUR DOMAIN]/login/facebook/complete
-    'fb_api_key': '1498140220488764',
-    'fb_secret': '0c0da1a36dd6756e4e8cc1325aca19f7',
+    'fb_api_key': '1305386492874661',
+    'fb_secret': '9dede123331989c60427ff0dec0f0878',
     'enable_federated_login': False,
     'google_analytics_code': """
             <script>
