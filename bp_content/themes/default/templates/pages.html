@@ -8,7 +8,7 @@
             <tr>
                 <td>{% if page.page_token !='' and page.page_token!='undefined' %}<a href="#" onclick="return false;" title="Owned">*</a>{% endif %}</td>
                 <td><img width="40px" height="40px" src="https://graph.facebook.com/{{ page.page_id }}/picture?type=square"></td>
-                <td>{{ page.name }}</td>
+                <td>{{ page.name }} <i class="glyphicon glyphicon-question-sign"  title="{{ page.page_id }}"></i></td>
                 <td>
                     <a class='btn btn-info' href='{{ uri_for("available-posts",page_id=page.key.id()  ) }}'>Posts <i class="glyphicon-th-list glyphicon"></i></a>
                     <a class='btn btn-info' href='{{ uri_for("page-stats",page_id=page.key.id()  ) }}'><i class="glyphicon-stats glyphicon"></i></a>

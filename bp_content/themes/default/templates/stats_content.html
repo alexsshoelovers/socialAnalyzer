@@ -71,7 +71,9 @@ function fill_data(page_id, element_label){
             type: 'get',
             data: {},
             dataType: 'json',
-            success: function (data) {
+            success: function (results) {
+                data = results.posts;
+                console.log(results.str_sql);
                 console.log(data);
                 for(i=0;i<data.length;i++){
                     post_id = data[i].post_id;

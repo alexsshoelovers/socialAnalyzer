@@ -1,0 +1,55 @@
+{% extends base_layout %}
+ {% block mediaCSS %}
+ <script src="https://unpkg.com/vue"></script>
+  {% endblock %}
+{% block title %}
+        Post Stats
+{% endblock %}
+{% block header_title %}
+        Post Stats
+{% endblock %}
+{% block subnavbar %}
+{% endblock %}
+{% block content %}
+<div id="app">
+    <todo-item v-for="item in posts" v-bind:post="item"></todo-item>
+</div>
+{% endblock %}
+
+{% block mediaJS %}
+<script>
+    function get_insights(){
+        url = 'https://graph.facebook.com/{{ post_id }}/?fields=admin_creator,created_time,caption,description,from,icon,link,name,picture,properties,shares,story,type,message,reactions.summary(total_count),insights.metric(post_reactions_by_type_total,post_story_adds_by_action_type_unique, post_impressions_unique,post_impressions_by_story_type_unique, post_consumptions_by_type_unique ).period(lifetime)&access_token={{ page.page_token }}';
+        $.ajax({
+                url: url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                    render(data);
+                }
+            });
+    }
+
+
+{%raw%}
+    function render(data){
+
+        Vue.component('todo-item', {
+          props:['post'],
+          template: '<li>{{ post.post_image }}</li>'
+
+        });
+
+        var app = new Vue({
+          el: '#app',
+          data: data
+        })
+    }
+
+    // get_insights();
+    data={ posts : [{'post_image':'http://www.yoamoloszapatos.com/image/'}]};
+    render(data);
+{%endraw%}
+</script>
+{% endblock %}

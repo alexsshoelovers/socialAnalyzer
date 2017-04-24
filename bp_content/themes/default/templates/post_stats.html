@@ -1,0 +1,397 @@
+{% extends base_layout %}
+
+
+{% block header %}
+ {% endblock %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class='row '>
+         <div class="col-xs-6  col-xs-offset-2 text-center">
+            <h2 style="background-color: rgba(255, 255, 255, 0.3) ;text-align: center;text-shadow: 2px 2px #ffffff;" id="strTitle">{{ post_message }}</h2>
+        </div>
+    </div>
+    <div class='row '>
+     <div class="col-xs-6   text-center">
+         <!-- <img style="width:100%;"src="{{ picture}}"/> -->
+{% set list = post_id.split('_') %}
+        <div class='row '>
+            <div class="col-xs-12">
+                <div class="fb-post"
+                  data-href="https://www.facebook.com/{{ list[0] }}/posts/{{ list[1]}}/"
+                  data-width="500">
+                </div>
+            </div>
+        </div>
+            <div class='row ' style="margin-top: 10px;">
+                 <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_like.png" style="width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_like">0</p>
+                     </div>
+                     <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_love.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_love">0</p>
+                     </div>
+                     <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_haha.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_haha">0</p>
+                     </div>
+                     <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_wow.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_wow">0</p>
+                     </div>
+                     <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_sad.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_sad">0</p>
+                     </div>
+                     <div class="col-xs-2  text-center">
+                     <img src="/default/img/fb_angry.png" style=" background-color: transparent;width:30px;height:30px;"><br/>
+                    <p style="text-align: center;text-shadow: 2px 2px #ffffff;" id="cnt_angry">0</p>
+                 </div>
+            </div>
+        </div>
+        <div class="col-xs-6 ">
+            <div class="list-group">
+               <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" >Post Stats</h4>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_impressions_unique">0</h4>
+                <p class="list-group-item-text">People Reached</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="total_engagement">0</h4>
+                <p class="list-group-item-text">Reactions, Comments and Shares</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id='total_likes'>0</h4>
+                <p class="list-group-item-text">Likes  (aggregated with Likes on Shares)</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id='total_comments'>0</h4>
+                <p class="list-group-item-text">Comments</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id='total_shares'>0</h4>
+                <p class="list-group-item-text">Shares</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="c_photo_view">0</h4>
+                <p class="list-group-item-text">Photo View</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="c_video_play">0</h4>
+                <p class="list-group-item-text">Video Play</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="c_link_clicks">0</h4>
+                <p class="list-group-item-text">Link Clicks</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="c_other_clicks">0</h4>
+                <p class="list-group-item-text">Other Clicks</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h5 class="list-group-item-heading">Negative Feedback</h5>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h5 class="list-group-item-heading" id="n_hide_clicks">0</h5>
+                <p class="list-group-item-text">Hide Post</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h5 class="list-group-item-heading" id="n_hide_all_clicks">0</h5>
+                <p class="list-group-item-text">Hide All Posts</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h5 class="list-group-item-heading" id="n_report_spam_clicks">0</h5>
+                <p class="list-group-item-text">Report as Spam</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h5 class="list-group-item-heading" id="n_unlike_page_clicks">0</h5>
+                <p class="list-group-item-text">Unlike Page</p>
+              </a>
+            </div>
+        </div>
+    </div>
+    <div class='row hidden' id="video_stats_div">
+        <div class="col-xs-6 ">
+            <div class="list-group">
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" >Video Stats</h4>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_view_time">0</h4>
+                <p class="list-group-item-text">Minutes Viewed</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_views">0</h4>
+                <p class="list-group-item-text">Video Views</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_views_10s">0</h4>
+                <p class="list-group-item-text">10-Second Views</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_avg_time_watched">0</h4>
+                <p class="list-group-item-text">Video Average Watch Time</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_views_organic_unique">0</h4>
+                <p class="list-group-item-text">Unique Viewers</p>
+              </a>
+            </div>
+        </div>
+        <div class="col-xs-6 ">
+            <div class="" id="retention_div"></div>
+            <div class="" id="audience_div"></div>
+
+        </div>
+    </div>
+    <div class='row hidden' id="video_stats_div2">
+        <div class="col-xs-12 ">
+            <div class="" id="region_div"></div>
+        </div>
+    </div>
+
+
+</div>
+
+{% endblock %}
+
+{% block mediaJS %}
+<script src="//cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+
+function numberWithCommas(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
+
+  window.fbAsyncInit = function() {
+    FB.init({
+      xfbml      : true,
+      version    : 'v2.8'
+    });
+  };
+  (function(d, s, id){
+    var js, fjs = d.getElementsByTagName(s)[0];
+    if (d.getElementById(id)) {return;}
+    js = d.createElement(s); js.id = id;
+    js.src = "//connect.facebook.net/en_US/sdk.js";
+    fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+</script>
+<script>
+post_id = '{{ post_id}}';
+
+function update_post_id(new_post_id){
+    post_id=new_post_id;
+
+}
+function numberWithCommas(x) {
+    var parts = x.toString().split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return parts.join(".");
+}
+
+
+setInterval(function() {
+        if(post_id!='UNDEFINED'){
+            reactions_url = 'https://graph.facebook.com/v2.9/'+ post_id +'?fields=type,reactions.type(LIKE).summary(total_count).limit(0).as(like),reactions.type(LOVE).summary(total_count).limit(0).as(love),reactions.type(WOW).summary(total_count).limit(0).as(wow),reactions.type(HAHA).summary(total_count).limit(0).as(haha),reactions.type(SAD).summary(total_count).limit(0).as(sad),reactions.type(ANGRY).summary(total_count).limit(0).as(angry),insights.metric(post_story_adds_by_action_type_unique, post_impressions_unique,post_consumptions_by_type_unique,post_negative_feedback_by_type,post_video_view_time,post_video_views,post_video_views_10s,post_video_avg_time_watched,post_video_retention_graph,post_video_views_organic_unique,post_video_view_time_by_age_bucket_and_gender,post_video_view_time_by_region_id).period(lifetime),object_id&access_token={{ page.page_token }}';
+            $.ajax({
+                url: reactions_url,
+                type: 'get',
+                data: {},
+                success: function (data) {
+                    console.log(data);
+                    type = data.type;
+                    if(type=="video"){
+                        $('#video_stats_div').removeClass('hidden');
+                        $('#video_stats_div2').removeClass('hidden');
+                    }
+                    likes = data.like.summary.total_count;
+                    loves = data.love.summary.total_count;
+                    hahas = data.haha.summary.total_count;
+                    wows = data.wow.summary.total_count;
+                    sads = data.sad.summary.total_count;
+                    angrys = data.angry.summary.total_count;
+                    total_reactions = likes+loves+hahas+wows+sads+angrys;
+                    insights = data.insights.data;
+                    total_post_story_adds_by_action_type_unique=0;
+                    total_likes=0;
+                    total_shares=0;
+                    total_comments=0;
+                    for(i=0;i<insights.length;i++){
+                        insight_name = insights[i].name;
+                        console.log(insight_name);
+                        if(insight_name=="post_impressions_unique" || insight_name=="post_video_views" || insight_name=="post_video_views_10s" || insight_name=="post_video_views_organic_unique"){
+                            try{
+                                insight_value = insights[i].values[0].value;
+                                $('#' + insight_name).text(numberWithCommas(insight_value));
+                            }catch(err){
+
+                            }
+                        }else if (insight_name=="post_story_adds_by_action_type_unique"){
+                            insight_value = insights[i].values[0].value;
+                            total_post_story_adds_by_action_type_unique=0;
+                            for (var property in insight_value) {
+                                if(property=='like'){
+                                    total_likes = insight_value[property];
+                                }
+                                if(property=='comment'){
+                                    total_comments = insight_value[property];
+                                }
+                                if(property=='share'){
+                                    total_shares = insight_value[property];
+                                }
+                                if (insight_value.hasOwnProperty(property)) {
+                                    // do stuff
+                                    total_post_story_adds_by_action_type_unique=total_post_story_adds_by_action_type_unique + insight_value[property];
+                                }
+                            }
+                            console.log('total_post_story_adds_by_action_type_unique = ' + total_post_story_adds_by_action_type_unique);
+                        }else if(insight_name=="post_consumptions_by_type_unique"){
+                            insight_value = insights[i].values[0].value;
+                            for (var property in insight_value) {
+                                strval = numberWithCommas(insight_value[property]);
+                                prop_name = property.split(' ').join('_');
+                                console.log('#c_' + prop_name +"=" + $('#' + prop_name).text());
+                                $('#c_' + prop_name).text(strval);
+                            }
+                        }else if(insight_name=="post_negative_feedback_by_type"){
+                            insight_value = insights[i].values[0].value;
+                            for (var property in insight_value) {
+                                strval = numberWithCommas(insight_value[property]);
+                                prop_name = property.split(' ').join('_');
+                                console.log('#n_' + prop_name +"=" + $('#' + prop_name).text());
+                                $('#n_' + prop_name).text(strval);
+                            }
+                        }else if (insight_name=="post_video_view_time"){
+                            insight_value = Math.round(insights[i].values[0].value/60000);
+                            $('#' + insight_name).text(numberWithCommas(insight_value));
+                        }else if (insight_name=="post_video_avg_time_watched"){
+                            insight_value = (insights[i].values[0].value/1000).toFixed(2);
+                            $('#' + insight_name).text(numberWithCommas(insight_value) + 's');
+                        }else if(insight_name=="post_video_retention_graph"){
+                            insight_value = insights[i].values[0].value;
+                            var arr_x = [];
+                            var arr_y = [];
+                            for (var property in insight_value) {
+                                arr_x.push(property);
+                                arr_y.push(insight_value[property]);
+                            }
+                            var trace1 = {
+                              x: arr_x,
+                              y: arr_y,
+                              mode: 'lines+markers',
+                              name: 'spline',
+                              line: {shape: 'spline'},
+                              type: 'scatter'
+                            };
+                            var data = [ trace1];
+                            var layout = {
+                                  title:'Video Retention Graph'
+                                };
+                            Plotly.newPlot('retention_div', data, layout);
+                        }else if(insight_name=="post_video_view_time_by_age_bucket_and_gender"){
+                            insight_value = insights[i].values[0].value;
+                            var arr_u = [];
+                            var arr_u_c=[];
+                            var arr_m = [];
+                            var arr_m_c=[];
+                            var arr_f = [];
+                            var arr_f_c=[];
+                            for (var property in insight_value) {
+                                cat=property.split('.')[0];
+                                subcat = property.split('.')[1];
+                                if(cat=='U'){
+                                    arr_u.push( Math.round(insight_value[property]/60000));
+                                    arr_u_c.push(subcat);
+                                }else if (cat=='F'){
+                                    arr_f.push(Math.round(insight_value[property]/60000));
+                                    arr_f_c.push(subcat);
+                                }else if (cat=='M'){
+                                    arr_m.push(Math.round(insight_value[property]/60000));
+                                    arr_m_c.push(subcat);
+                                }
+                            }
+                            var trace1 = {
+                              x: arr_u_c,
+                              y: arr_u,
+                              name: 'Unknown',
+                              type: 'bar'
+                            };
+                            var trace2 = {
+                              x: arr_f_c,
+                              y: arr_f,
+                              name: 'Female',
+                              type: 'bar'
+                            };
+                            var trace3 = {
+                              x: arr_m_c,
+                              y: arr_m,
+                              name: 'Male',
+                              type: 'bar'
+                            };
+                            var data = [ trace1,trace2,trace3];
+                            var layout = {
+                                  title:'Audience Graph',
+                                  barmode:'group'
+                                };
+                            Plotly.newPlot('audience_div', data, layout);
+                        }else if (insight_name=="post_video_view_time_by_region_id"){
+                            insight_value = insights[i].values[0].value;
+                            var arr_region_value = [];
+                            var arr_region_name=[];
+                            for (var property in insight_value) {
+                                arr_region_name.push(property);
+                                arr_region_value.push(insight_value[property]/60000);
+                            }
+                            var trace1 = {
+                              x: arr_region_value,
+                              y: arr_region_name,
+                              name: 'Unknown',
+                              type: 'bar',
+                              orientation: 'h',
+                              marker: { width: 1}
+                            };
+                            data=[trace1];
+                            var layout = {
+                                  title:'Region Graph',
+                                  barmode:'group',
+                                  yaxis: {
+                                    title: 'Regions',
+                                    // dtick: 1,
+                                  },
+                                  margin: {
+                                    l: 500
+                                  }
+                                };
+                            Plotly.newPlot('region_div', data, layout);
+                        }
+
+                    }
+                    $('#cnt_like').text(numberWithCommas(likes));
+                    $('#cnt_love').text(numberWithCommas(loves));
+                    $('#cnt_wow').text(numberWithCommas(wows));
+                    $('#cnt_angry').text(numberWithCommas(angrys));
+                    $('#cnt_sad').text(numberWithCommas(sads));
+                    $('#cnt_haha').text(numberWithCommas(hahas));
+                    $('#total_likes').text(numberWithCommas(total_likes));
+                    $('#total_shares').text(numberWithCommas(total_shares));
+                    $('#total_comments').text(numberWithCommas(total_comments));
+                    total_engagement = total_likes + total_shares+total_comments;
+                    $('#total_engagement').text(numberWithCommas(total_engagement));
+
+
+                }
+            });
+        }
+}, 1500);
+
+
+</script>
+{% endblock %}
+

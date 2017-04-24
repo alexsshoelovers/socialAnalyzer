@@ -38,6 +38,8 @@ from datetime import timedelta
 from bp_includes.lib import facebook
 import time
 import itertools
+from jsonconv import Json2Html
+import base64
 
 SQLIP = '146.148.107.179'
 SQLINSTANCE_NAME='socialanalyzer-157404:us-central1:abejita'
@@ -971,13 +973,29 @@ class PageStatsContentHandler(BaseHandler):
         params['pages']=pages
         params['page_id'] = page.page_id
         params['page'] = page
+        params['str_sql'] = ''
         dataset = self.request.get('dataset')
         logging.info(action)
         logging.info(dataset)
         if action=='get_data':
-            period = self.request.get('period','week')
+            period = self.request.get('daterange_filter','week')
+            days = 62
+            if period=='twomonths':
+                days=62
+            elif period=='month':
+                days=31
+            else:
+                days=7
+            logging.info('days: %s' % days)
+
+            range_date = datetime.today()-timedelta(days=days+1)
+            logging.info('ranbge_dagte: %s' % range_date)
+            range_year = "%02d" % range_date.year
+            range_month = "%02d" % range_date.month
+            range_day = "%02d" % range_date.day
+            variables={'timezone':user.report_timezone, 'page_id':page_id,'year': range_year, 'month': range_month, 'day': range_day}
             if dataset =='page_content':
-                str_sql="select *   from fbpage_fans where page_id='%s' and country='total'  order by date asc " % page.page_id
+                str_sql="select *   from fbpage_fans where page_id='%s' and country='total'  and  DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')> '{year}-{month}-{day}' order by date asc ".format(**variables)
                 page_fans= returnCursor(str_sql ,'abejita')
                 self.response.headers['Content-Type'] = 'application/json'
                 self.response.out.write(json.dumps(page_fans, cls=DateTimeEncoder))
@@ -1001,15 +1019,22 @@ class PageStatsContentHandler(BaseHandler):
                 if sql_where =='all':
                     pass
                 elif sql_where in ['with','shared','live']:
-                    where_str.append(" story like '%% %s %%'" % sql_where)
+                    where_str.append(" story like '%%%s%%'" % sql_where)
                 elif sql_where in ['photo', 'link', 'video']:
                     where_str.append(" post_type =  '%s'" % sql_where)
+
+                where_str.append("DATE_FORMAT(DATE_ADD(  STR_TO_DATE(created_time, '%Y-%m-%dT%H:%i:%s+0000'), INTERVAL {timezone} HOUR)     ,'%Y-%m-%d')> '{year}-{month}-{day}'".format(**variables))
+
                 concat_where = ' and '.join(where_str)
                 str_sql = "select post_id, message, story, likes, shares, comments, likes+ shares + comments as total, post_impressions, link_clicks, post_video_views, link from fbposts_batch where  %s  %s limit 15" % (concat_where , order_sql)
+                params['str_sql'] = str_sql
                 logging.info (str_sql)
                 posts = returnCursor(str_sql, 'abejita')
+                results = {}
+                results['posts'] =posts
+                results['str_sql'] = str_sql
                 self.response.headers['Content-Type'] = 'application/json'
-                self.response.out.write(json.dumps(posts, cls=DateTimeEncoder))
+                self.response.out.write(json.dumps(results, cls=DateTimeEncoder))
         else:
             self.render_template('stats_content.html',**params)
 
@@ -1119,6 +1144,7 @@ class task_downloadPageHandler(BaseHandler):
         permalink_url = post.get('permalink_url','')
         link  = post.get('link', '')
         message = post.get('message','')
+        message = message[:2499]
         from_name =post.get('from',{}).get('name','')
         from_id =post.get('from',{}).get('id','')
         created_time = post.get('created_time','')
@@ -1475,10 +1501,13 @@ class AvailablePostsHandler(BaseHandler):
         logging.info(self.request.POST.items())
         action= self.request.get('action')
         post_ids=[]
+        str_sql = ''
         if action=="get_data":
             str_taxonomies = self.request.get('taxonomies').split(',') if self.request.get('taxonomies').strip()!='' else []
             str_types = self.request.get('types').split(',') if self.request.get('types').strip()!='' else []
             str_query = self.request.get('str_query').strip()
+            created_time_where = self.request.get('created_time_where').strip()
+            created_time_comparator=self.request.get('created_time_comparator').strip()
             story_list =[]
             type_list=[]
             for type in str_types:
@@ -1509,16 +1538,19 @@ class AvailablePostsHandler(BaseHandler):
                 type_where  = 'post_type in (%s)' % ','.join(type_list)
                 total_where_list.append("( %s ) " % type_where)
             if len(story_list)>0:
-                story_where = ' or '.join([" story like ' %% %s %% ' " % type for type in story_list])
+                story_where = ' or '.join([" story like '%%%s%%' " % type for type in story_list])
                 total_where_list.append("( %s ) " % story_where)
             message_where = []
             if len(str_query)>0:
                 message_where = "message like '%%%s%%'" %  str_query
                 total_where_list.append("( %s ) " % message_where)
 
+            if created_time_where!='' and created_time_comparator!='':
+                total_where_list.append("( a.created_time %s '%s' ) " % ( created_time_comparator , created_time_where))
+
             if len(total_where_list) >0:
                 total_where = ' and '.join(total_where_list)
-                str_sql = "select a.post_id from fbposts_batch a left join posts_taxonomies b on a.post_id=b.post_id where %s order by created_time desc limit 10 " % total_where
+                str_sql = "select a.post_id, a.created_time from fbposts_batch a left join posts_taxonomies b on a.post_id=b.post_id where %s order by created_time desc limit 10 " % total_where
 
 
             posts_queried= returnCursor(str_sql ,'abejita')
@@ -1530,7 +1562,7 @@ class AvailablePostsHandler(BaseHandler):
         token = self.get_available_posts_token(page_id)
         posts_url = 'https://graph.facebook.com/v2.6/?ids=%s&fields=permalink_url,story,attachments,message,link,type,created_time,picture,id&access_token=%s' % (comma_ids, token)
         logging.info(posts_url)
-        return self.render_available_posts(page_id,posts_url, 'query')
+        return self.render_available_posts(page_id,posts_url, 'query', str_sql,post_ids )
 
     def get_available_posts_token(self, page_id):
         user = ndb.Key('User', int(self.user_id)).get()
@@ -1556,8 +1588,9 @@ class AvailablePostsHandler(BaseHandler):
         return token
 
 
-    def render_available_posts(self,page_id,posts_url, method='data'):
+    def render_available_posts(self,page_id,posts_url, method='data', str_sql='', posts_ordered=[]):
         params ={}
+        params['str_sql'] = str_sql
         user = ndb.Key('User', int(self.user_id)).get()
         user_timezone = user.report_timezone
         if user.isadmin:
@@ -1587,7 +1620,7 @@ class AvailablePostsHandler(BaseHandler):
                 data_posts=[ value for key, value in  json.loads( r.content).iteritems()]
             paging_posts={}
         logging.info('*'*30)
-        logging.info(data_posts)
+        # logging.info(data_posts)
         transformed_posts = []
         post_id_list = []
         for post in data_posts:
@@ -1626,13 +1659,22 @@ class AvailablePostsHandler(BaseHandler):
                 }
 
         joined_transformed_posts = []
+
         for post in transformed_posts:
             post['taxonomies'] = taxonomy_dict.get( post.get('id'),{}).get('taxonomies',[])
             # logging.info('taxonomies: %s' % post['taxonomies'])
             joined_transformed_posts.append(post)
+        joined_transformed_posts=sorted(joined_transformed_posts, key=lambda post: post["created_time"], reverse=True)
+        first_created_time=''
+        last_created_time=''
+
+        if len(joined_transformed_posts)>0:
+            first_created_time=joined_transformed_posts[0].get('created_time','')
+            last_created_time=joined_transformed_posts[-1].get('created_time','')
 
 
-
+        params['first_created_time']=first_created_time
+        params['last_created_time']=last_created_time
         params['str_taxonomies'] = self.request.get('taxonomies').split(',') if self.request.get('taxonomies').strip()!='' else []
         params['str_types'] = self.request.get('types').split(',') if self.request.get('types').strip()!='' else []
         params['str_query'] = self.request.get('str_query').strip()
@@ -1641,6 +1683,7 @@ class AvailablePostsHandler(BaseHandler):
         params['timezone'] = user_timezone
         params['posts'] = joined_transformed_posts
         params['page']=page.to_dict()
+        params['user'] =user
 
         params['page_id']=page_id
         params['page_token'] = page.page_token
@@ -2158,3 +2201,174 @@ class DeleteAccountHandler(BaseHandler):
     @webapp2.cached_property
     def form(self):
         return forms.DeleteAccountForm(self)
+
+
+class AudiencesHandler(BaseHandler):
+    def get(self):
+        pass
+
+class PublicRenderPostIDtHandler(BaseHandler):
+    def get(self,post_id):
+        params={}
+        select_type = self.request.get('type','video')
+        # arr_post_id = post_id.split('_')
+        # page_id = arr_post_id[0]
+        # post = arr_post_id[1]
+        render_html=""
+        if select_type=='video':
+            render_html="""
+            <html>
+                <head>
+                  <title>Your Website Title</title>
+                </head>
+                <body>
+                    Test
+                  <!-- Load Facebook SDK for JavaScript -->
+                  <iframe name="alex" id="alex" src="https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/facebook/videos/%s/&width=500&show_text=false&appId=1283557448348524&height=280" width="500" height="280" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowTransparency="true"></iframe>
+                </body>
+            </html>
+            """ % post_id
+        elif select_type=='photo':
+            parts = post_id.split('_')
+            if len(parts)>1:
+                page_id = parts[0]
+                post=parts[1]
+                render_html="""
+                <html>
+                    <head></head>
+                    <body>
+                    <iframe src="https://www.facebook.com/plugins/post.php?href=https://www.facebook.com/%s/posts/%s/&width=500&show_text=true&appId=1283557448348524&height=557" width="500" height="557" style="border:none;overflow:hidden" scrolling="no" frameborder="0" allowTransparency="true"></iframe>
+                    </body>
+                </html>
+                """ % (page_id, post)
+            else:
+                render_html="""
+                <html>
+                    <head></head>
+                    <body>
+                    Post not found %s
+                    </body>
+                </html>
+                """ % post_id
+        elif select_type=='link':
+            pass
+        self.response.out.write(render_html)
+
+
+class PostStatsHandler(BaseHandler):
+    def get(self, post_id):
+        params={}
+        page_id = ""
+        parts = post_id.split("_")
+        if len(parts)>1:
+            page_id = parts[0]
+            post = parts[1]
+
+            page = localmodels.Page.query(localmodels.Page.page_id==page_id).get()
+            params['page_id'] = page_id
+            params['page'] = page
+            params['post_id']=post_id
+            self.render_template("post_stats.html", **params)
+        else:
+            self.response.out("Error post not found")
+
+    def post(self):
+        pass
+
+def get_msft_vision_api_metadata(picture_url):
+    msft_key='ccaab9a15ebf44e7812ac18efa7bc708'
+    ########### Python 2.7 #############
+    import httplib, urllib, base64
+
+    headers = {
+        # Request headers
+        'Content-Type': 'application/json',
+        'Ocp-Apim-Subscription-Key': msft_key,
+    }
+
+    params = urllib.urlencode({
+        # Request parameters
+        'visualFeatures': 'Tags,Description',
+        'language': 'en',
+    })
+    image_data = {"url" : picture_url}
+    s_image_data = json.dumps(image_data)
+    try:
+        conn = httplib.HTTPSConnection('westus.api.cognitive.microsoft.com')
+
+        conn.request("POST", "/vision/v1.0/analyze?%s" % params, s_image_data, headers)
+        response = conn.getresponse()
+        data = response.read()
+        jdata =  json.loads(data)
+        conn.close()
+        return jdata
+    except Exception as e:
+        print("[Errno {0}] {1}".format(e.errno, e.strerror))
+
+def get_as_base64(url):
+    return base64.b64encode(urlfetch.fetch(url).content)
+
+def get_cloud_vision_api_metadata(picture_url):
+    api_key='AIzaSyCA6mWOqKOS934jXwNtmY-KAjt-Q5vJhfU'
+    url = "https://vision.googleapis.com/v1/images:annotate?key=%s" % api_key
+    headers = {'Content-Type': 'application/json'}
+    img_base64=get_as_base64(picture_url)
+    request_data={
+      "requests": [
+        {
+          "image": {
+            "content": img_base64,
+          },
+          "features": [
+           {
+              "type": "LABEL_DETECTION" ,
+              "maxResults": 20,
+            },
+            {
+              "type": "IMAGE_PROPERTIES" ,
+              "maxResults": 20,
+            },
+            {
+              "type": "WEB_DETECTION" ,
+              "maxResults": 20,
+            }
+
+          ]
+        }
+      ],
+    }
+    logging.info(request_data)
+    r = urlfetch.fetch(url,headers=headers, method=urlfetch.POST, payload=json.dumps(request_data))
+    return json.loads(r.content)
+
+class CloudVisionHandler(BaseHandler):
+    def get(self):
+        post_id = self.request.get("post_id")
+        if post_id:
+            access_token = getGeneralFBAccessToken()
+            url = 'https://graph.facebook.com/%s/?fields=message,full_picture,picture.type(large)&access_token=%s' % ( post_id ,access_token)
+            r =urlfetch.fetch(url)
+            rj =json.loads(r.content)
+            logging.info(rj)
+            full_picture = rj.get('full_picture','')
+            picture = rj.get('picture','')
+            params = {}
+            params['full_picture']=full_picture
+            params['picture']=picture
+            metadata1 = {"hola":"como estas"}
+            metadata2 = {"hola":"como estas"}
+            try:
+                metadata1 = get_msft_vision_api_metadata(full_picture)
+            except:
+                metadata1 = {}
+            json2html = Json2Html()
+            params['metadata1']=json2html.convert(json.dumps(metadata1), table_attributes='class="table table-striped"')
+            try:
+                metadata2 =get_cloud_vision_api_metadata(full_picture)
+            except:
+                metadata2={}
+            params['metadata2'] = json2html.convert(json.dumps(metadata2), table_attributes='class="table table-striped"')
+            self.render_template('picture_metadata.html', **params)
+
+        else:
+            self.response.out.write('404: Post not found')

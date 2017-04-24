@@ -1,0 +1,34 @@
+{% extends base_layout %}
+{% block title %}
+        Metadata
+{% endblock %}
+{% block header_title %}
+        Metadata
+{% endblock %}
+
+{% block subnavbar %}
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-6">
+        <img src="{{ picture }}" class="img-responsive" alt="Responsive image" ><br/>
+    </div>
+    <div class="col-xs-12 col-sm-6">
+        <img src="{{ full_picture }}" class="img-responsive" alt="Responsive image" >
+    </div>
+  </div>
+  <div class="row">
+    <div class="">
+        {{ metadata1 }}
+    </div>
+  </div>
+  <div class="row">
+    <div class="">
+        {{ metadata2 }}
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block mediaJS %}
+{% endblock %}

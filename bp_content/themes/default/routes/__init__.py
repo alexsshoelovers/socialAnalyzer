@@ -32,6 +32,8 @@ _routes = [
     RedirectRoute('/page_stats/<page_id>/with', handlers.PageStatsWithHandler, name='page-stats-with', strict_slash=True),
     RedirectRoute('/page_stats/<page_id>/clicks', handlers.PageStatsClicksHandler, name='page-stats-clicks', strict_slash=True),
     RedirectRoute('/page_stats/<page_id>/reach_geo', handlers.PageStatsReachGeoHandler, name='page-stats-reach-distribution', strict_slash=True),
+    RedirectRoute('/page_stats/<page_id>/audiences', handlers.AudiencesHandler, name='page-stats-audience-distribution', strict_slash=True),
+    RedirectRoute('/post_stats/<post_id>/', handlers.PostStatsHandler, name='post-stats', strict_slash=True),
     RedirectRoute('/schedule_live_video/<page_id>/', handlers.ScheduleLiveHandler, name='schedule-live', strict_slash=True),
     RedirectRoute('/realtime_counter/<post_id>/', handlers.RealTimeCounterHandler, name='realtime_counter', strict_slash=True),
     RedirectRoute('/general_config/', handlers.GeneralConfigHandler, name='general-config', strict_slash=True),
@@ -48,6 +50,8 @@ _routes = [
     RedirectRoute('/taskqueue_daily_download_page_fans/', handlers.taskGetDailyLastPageFans, name='get_daily_page_fans', strict_slash=True),
     RedirectRoute('/taskqueue_get_public_page_fans/', handlers.taskGetPublicPageFans, name='get_public_page_fans', strict_slash=True),
     RedirectRoute('/extendGeneralFbUserToken/', handlers.ExtendGeneralFbUserTokenRequestHandler, name='extend_general_fb_user_token', strict_slash=True),
+    RedirectRoute('/public_fmbl_render_post_id/<post_id>/', handlers.PublicRenderPostIDtHandler, name='public_render_embed_facebook_post', strict_slash=True),
+    RedirectRoute('/cloud_vision_api/', handlers.CloudVisionHandler, name='cloud_vision_api', strict_slash=True),
 
 ]
 

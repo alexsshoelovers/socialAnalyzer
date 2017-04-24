@@ -60,9 +60,16 @@ Search</div></h2>
 
     <table class="table table-striped"><tr><th>Post_id</th><th>Image</th><th>Type</th><th>Message</th><th>Time (UTC {{ timezone }})</th></tr>
 {% for post in posts %}
+
     <tr>
         <td><!-- <a class="btn btn-info" target="_blank" href="/realtime_counter/{{ post.id }}/?type=fixed">RT Reactions</a> --><a href="https://www.facebook.com/{{ post.id }}" target="_blank">FB</a></td>
-        <td><img src="{{ post.picture }}" style="width:70px;"></td><td><a href="{{ post.link}}" target="_blank">{{ post.type }}</a></td><td>
+        <td>
+            <img src="{{ post.picture }}" style="width:70px;">
+            {% if page.page_token !='' and page.page_token!='undefined' %}
+            <a target="_blank" class="btn btn-info" href="/post_stats/{{ post.id }}/"><i class="glyphicon-stats glyphicon"></i></a>
+            {% endif %}
+            <a target="_blank" class="btn btn-info" href="{{ uri_for('cloud_vision_api', post_id=post.id) }}"><i title="metadata" class="glyphicon-search glyphicon"></i></a>
+        </td><td><a href="{{ post.link}}" target="_blank">{{ post.type }}</a></td><td>
 
             <table class="table">
             {% if post.story !='' %}
@@ -91,6 +98,7 @@ Search</div></h2>
                             <span onclick="switch_badge(this,'{{ post.id }}');" class="label label-as-badge label-default {% if general_tax in post.taxonomies %} label-info {% endif %} ">{{ general_tax }}</span>
                         {% endfor %}
                     {% endif %}
+
                 </td></tr>
             </table>
         </td><td>{{ post.created_time }}</td>
@@ -99,11 +107,21 @@ Search</div></h2>
     </table>
 <input type="hidden" value="{{ page_previous }}" id="previous">
 <input type="hidden" value="{{ page_next }}" id="next">
+<input type="hidden" value="{{ first_created_time }}" id="first_created_time">
+<input type="hidden" value="{{ last_created_time }}" id="last_created_time">
 {% if previous !='' %}
-    <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_previous|safe }}" class="btn btn-info">Load previous page    </a>
+    {% if str_sql !='' %}
+        <a  href="#" onclick="searchPosts('previous');return false;" class="btn btn-info">Load previous page    </a>
+    {% else %}
+        <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_previous|safe }}" class="btn btn-info">Load previous page    </a>
+    {% endif %}
 {% endif %}
 {% if next !='' %}
-    <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_next|safe}}" class="btn btn-info">Load next page    </a>
+    {% if str_sql !='' %}
+        <a  href="#"  onclick="searchPosts('next');return false;" class="btn btn-info">Load next page    </a>
+    {% else %}
+        <a  href="{{ uri_for('available-posts', page_id=page.page_id) }}?next={{ page_next|safe}}" class="btn btn-info">Load next page    </a>
+    {% endif %}
 {% endif %}
 <form method="POST" id='search_form' name='search_form' action='{{ uri_for('available-posts', page_id=page.page_id) }}'>
     <input type='hidden' name='_csrf_token' id='_csrf_token' value='{{ csrf_token() }}'/>
@@ -111,6 +129,8 @@ Search</div></h2>
     <input type='hidden' name='taxonomies' id='frm_taxonomies' value=''/>
     <input type='hidden' name='types' id='frm_types' value=''/>
     <input type='hidden' name='str_query' id='frm_str_query' value=''/>
+    <input type='hidden' name='created_time_where' id='created_time_where' value=''/>
+    <input type='hidden' name='created_time_comparator' id='created_time_comparator' value=''/>
 </form>
 {% endblock %}
 
@@ -153,7 +173,10 @@ Search</div></h2>
         window.location = '?status='+ status +'&action=update_live&video_id=' +videoid;
     }
 
-    function searchPosts(){
+    function searchPosts(direction){
+        if (direction === undefined) {
+            direction = '';
+        }
         var attributes  = $('.class-search');
         tax_arr=[];
         typ_arr=[];
@@ -177,11 +200,23 @@ Search</div></h2>
             str_taxonimies = tax_arr.join();
             str_types = typ_arr.join();
             str_url = '{{ uri_for("available-posts", page_id=page_id) }}';
+            if (direction=='previous'){
+                $('#created_time_comparator').val('>');
+                $('#created_time_where').val($('#first_created_time').val());
+            }else if (direction=='next'){
+                $('#created_time_comparator').val('<');
+                $('#created_time_where').val($('#last_created_time').val());
+            }
+
             $('#frm_taxonomies').val(str_taxonimies);
             $('#frm_types').val(str_types);
             $('#frm_str_query').val($('#txtsearch').val());
             $('#search_form').submit();
     }
 
+
+{% if user.isadmin %}
+    console.log("{{ str_sql }}");
+{% endif %}
 </script>
 {% endblock %}
