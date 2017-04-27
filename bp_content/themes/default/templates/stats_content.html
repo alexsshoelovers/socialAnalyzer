@@ -60,7 +60,15 @@
 <script>
 
 function return_fb_embed(page_id, post_id, story){
-    str_embed='<div class="panel panel-default"><div class="panel-heading">'+ story +'</div><div class="panel-body embed-responsive"><div class="fb-post" data-href="https://www.facebook.com/' + page_id + '/posts/' + post_id + '/"  style="width:300" data-width="300" data-show-text="true"><blockquote cite="https://www.facebook.com/yoamoloszapatos/videos/1946023868746905/" class="fb-xfbml-parse-ignore"></div></div></div>'
+    var owned_page=false;
+    {% if page.page_token !='' and page.page_token!='undefined' %}
+        owned_page=true;
+    {% endif %}
+    var post_stats_widget="";
+    if (owned_page){
+        post_stats_widget='<a target="_blank" class="btn btn-info" href="/post_stats/'+ page_id + '_' + post_id + '/"><i class="glyphicon-stats glyphicon"></i></a>'
+    }
+    str_embed='<div class="panel panel-default"><div class="panel-heading">'+ story +post_stats_widget +'</div><div class="panel-body embed-responsive"><div class="fb-post" data-href="https://www.facebook.com/' + page_id + '/posts/' + post_id + '/"  style="width:300" data-width="300" data-show-text="true"><blockquote cite="https://www.facebook.com/yoamoloszapatos/videos/1946023868746905/" class="fb-xfbml-parse-ignore"></div></div></div>'
     return str_embed
 
 }

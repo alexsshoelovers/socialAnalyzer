@@ -1542,7 +1542,7 @@ class AvailablePostsHandler(BaseHandler):
                 total_where_list.append("( %s ) " % story_where)
             message_where = []
             if len(str_query)>0:
-                message_where = "message like '%%%s%%'" %  str_query
+                message_where =' or '.join( [" message like '%%%s%%' " %  str_query, " story like '%%%s%%' " %  str_query, " attachment_title like '%%%s%%' " %  str_query , " attachment_description like '%%%s%%' " %  str_query ])
                 total_where_list.append("( %s ) " % message_where)
 
             if created_time_where!='' and created_time_comparator!='':
@@ -2270,7 +2270,7 @@ class PostStatsHandler(BaseHandler):
             params['post_id']=post_id
             self.render_template("post_stats.html", **params)
         else:
-            self.response.out("Error post not found")
+            self.response.out.write("Error post not found")
 
     def post(self):
         pass

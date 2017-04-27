@@ -22,6 +22,11 @@
                   data-width="500">
                 </div>
             </div>
+            <div class="col-xs-12">
+                <div id="post_picture_large">
+
+                </div>
+            </div>
         </div>
             <div class='row ' style="margin-top: 10px;">
                  <div class="col-xs-2  text-center">
@@ -120,6 +125,10 @@
                 <h4 class="list-group-item-heading" >Video Stats</h4>
               </a>
               <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_length">0</h4>
+                <p class="list-group-item-text">Video Length</p>
+              </a>
+              <a href="#" class="list-group-item ">
                 <h4 class="list-group-item-heading" id="post_video_view_time">0</h4>
                 <p class="list-group-item-text">Minutes Viewed</p>
               </a>
@@ -132,12 +141,24 @@
                 <p class="list-group-item-text">10-Second Views</p>
               </a>
               <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="post_video_complete_views_30s_unique">0</h4>
+                <p class="list-group-item-text">30-Second Views</p>
+              </a>
+              <a href="#" class="list-group-item ">
                 <h4 class="list-group-item-heading" id="post_video_avg_time_watched">0</h4>
                 <p class="list-group-item-text">Video Average Watch Time</p>
               </a>
               <a href="#" class="list-group-item ">
                 <h4 class="list-group-item-heading" id="post_video_views_organic_unique">0</h4>
                 <p class="list-group-item-text">Unique Viewers</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="total_completed_video_views">0</h4>
+                <p class="list-group-item-text">Completed Views</p>
+              </a>
+              <a href="#" class="list-group-item ">
+                <h4 class="list-group-item-heading" id="completion_rate">0</h4>
+                <p class="list-group-item-text">Completion Rate</p>
               </a>
             </div>
         </div>
@@ -197,9 +218,10 @@ function numberWithCommas(x) {
 }
 
 
-setInterval(function() {
+
+function refreshData() {
         if(post_id!='UNDEFINED'){
-            reactions_url = 'https://graph.facebook.com/v2.9/'+ post_id +'?fields=type,reactions.type(LIKE).summary(total_count).limit(0).as(like),reactions.type(LOVE).summary(total_count).limit(0).as(love),reactions.type(WOW).summary(total_count).limit(0).as(wow),reactions.type(HAHA).summary(total_count).limit(0).as(haha),reactions.type(SAD).summary(total_count).limit(0).as(sad),reactions.type(ANGRY).summary(total_count).limit(0).as(angry),insights.metric(post_story_adds_by_action_type_unique, post_impressions_unique,post_consumptions_by_type_unique,post_negative_feedback_by_type,post_video_view_time,post_video_views,post_video_views_10s,post_video_avg_time_watched,post_video_retention_graph,post_video_views_organic_unique,post_video_view_time_by_age_bucket_and_gender,post_video_view_time_by_region_id).period(lifetime),object_id&access_token={{ page.page_token }}';
+            reactions_url = 'https://graph.facebook.com/v2.9/'+ post_id +'?fields=full_picture,type,reactions.type(LIKE).summary(total_count).limit(0).as(like),reactions.type(LOVE).summary(total_count).limit(0).as(love),reactions.type(WOW).summary(total_count).limit(0).as(wow),reactions.type(HAHA).summary(total_count).limit(0).as(haha),reactions.type(SAD).summary(total_count).limit(0).as(sad),reactions.type(ANGRY).summary(total_count).limit(0).as(angry),insights.metric(post_story_adds_by_action_type_unique, post_impressions_unique,post_consumptions_by_type_unique,post_negative_feedback_by_type,post_video_view_time,post_video_views,post_video_views_10s,post_video_avg_time_watched,post_video_retention_graph,post_video_views_organic_unique,post_video_view_time_by_age_bucket_and_gender,post_video_view_time_by_region_id,post_video_complete_views_30s_unique,post_video_complete_views_organic,post_video_complete_views_paid,post_video_length).period(lifetime),object_id&access_token={{ page.page_token }}';
             $.ajax({
                 url: reactions_url,
                 type: 'get',
@@ -211,6 +233,8 @@ setInterval(function() {
                         $('#video_stats_div').removeClass('hidden');
                         $('#video_stats_div2').removeClass('hidden');
                     }
+                    picture = data.full_picture;
+                    // $('#post_picture_large').html('<img src="'+ picture + '"  class="img-responsive" alt="Responsive image">')
                     likes = data.like.summary.total_count;
                     loves = data.love.summary.total_count;
                     hahas = data.haha.summary.total_count;
@@ -223,13 +247,19 @@ setInterval(function() {
                     total_likes=0;
                     total_shares=0;
                     total_comments=0;
+                    post_video_complete_views_organic=0;
+                    post_video_complete_views_paid=0;
+                    post_video_views = 0;
                     for(i=0;i<insights.length;i++){
                         insight_name = insights[i].name;
                         console.log(insight_name);
-                        if(insight_name=="post_impressions_unique" || insight_name=="post_video_views" || insight_name=="post_video_views_10s" || insight_name=="post_video_views_organic_unique"){
+                        if(insight_name=="post_impressions_unique" || insight_name=="post_video_views" || insight_name=="post_video_views_10s" || insight_name=="post_video_views_organic_unique" || insight_name=="post_video_complete_views_30s_unique"){
                             try{
                                 insight_value = insights[i].values[0].value;
                                 $('#' + insight_name).text(numberWithCommas(insight_value));
+                                if(insight_name=="post_video_views"){
+                                    post_video_views = insight_value;
+                                }
                             }catch(err){
 
                             }
@@ -271,7 +301,7 @@ setInterval(function() {
                         }else if (insight_name=="post_video_view_time"){
                             insight_value = Math.round(insights[i].values[0].value/60000);
                             $('#' + insight_name).text(numberWithCommas(insight_value));
-                        }else if (insight_name=="post_video_avg_time_watched"){
+                        }else if (insight_name=="post_video_avg_time_watched" || insight_name=="post_video_length"){
                             insight_value = (insights[i].values[0].value/1000).toFixed(2);
                             $('#' + insight_name).text(numberWithCommas(insight_value) + 's');
                         }else if(insight_name=="post_video_retention_graph"){
@@ -370,6 +400,12 @@ setInterval(function() {
                                   }
                                 };
                             Plotly.newPlot('region_div', data, layout);
+                        }else if(insight_name=='post_video_complete_views_organic' || insight_name=='post_video_complete_views_paid'){
+                            if (insight_name=='post_video_complete_views_organic'){
+                                post_video_complete_views_organic = insights[i].values[0].value;
+                            }else if( insight_name=='post_video_complete_views_paid'){
+                                post_video_complete_views_paid=insights[i].values[0].value;
+                            }
                         }
 
                     }
@@ -384,14 +420,19 @@ setInterval(function() {
                     $('#total_comments').text(numberWithCommas(total_comments));
                     total_engagement = total_likes + total_shares+total_comments;
                     $('#total_engagement').text(numberWithCommas(total_engagement));
+                    total_completed_video_views=post_video_complete_views_organic+post_video_complete_views_paid;
+                    $('#total_completed_video_views').text(numberWithCommas(total_completed_video_views));
+                    completion_rate = ((total_completed_video_views*100)/post_video_views).toFixed(2);
+                    $('#completion_rate').text(numberWithCommas(completion_rate) + ' %');
 
 
                 }
             });
         }
-}, 1500);
+};
 
-
+refreshData();
+// setInterval(refreshData(), 1500);
 </script>
 {% endblock %}
 
